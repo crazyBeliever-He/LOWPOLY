@@ -55,11 +55,10 @@ void Widget::initMenus()
     //about menu
     QMenu *settingMenu = new QMenu(this->ui->aboutButton);
     QAction *aboutProgramAction = settingMenu->addAction("Program");
-    QAction *aboutAutherAction = settingMenu->addAction("Auther");
+    QAction *aboutAuthorAction = settingMenu->addAction("Auther");
     ui->aboutButton->setMenu(settingMenu);
     connect(aboutProgramAction, &QAction::triggered, this, &Widget::showAboutProgram);
-    connect(aboutAutherAction, &QAction::triggered, this, &Widget::showAboutAuthor);
-
+    connect(aboutAuthorAction, &QAction::triggered, this, &Widget::showAboutAuthor);
 }
 
 void Widget::initToolMenuWidget()

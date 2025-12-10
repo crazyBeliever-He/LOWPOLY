@@ -106,7 +106,7 @@ void ImageController::applyBlur()
     QImage src = imageModel->getImage(ImageModel::TYPE_ORIGIN);
     QImage dst = src;
 
-    // 这里我们简单进行一个平均模糊
+    // 简单进行一个平均模糊
     for (int y = 1; y < dst.height() - 1; ++y) {
         for (int x = 1; x < dst.width() - 1; ++x) {
             QColor c1 = QColor(src.pixel(x - 1, y - 1));

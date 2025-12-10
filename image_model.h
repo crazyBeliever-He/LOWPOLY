@@ -13,13 +13,13 @@ class ImageModel : public QObject
 
 public:
     enum ImageType {
-        TYPE_ORIGIN,    // 原始图像
-        TYPE_GRAY,      //
-        TYPE_BLUR,      //
-        TYPE_OUTLINE,   //
-        TYPE_CUSTOM1,   //
-        TYPE_CUSTOM2,   //
-        NUM_TYPES       // 存储的图像数量
+        TYPE_ORIGIN = 0,    // 原始图像
+        TYPE_GRAY,          //
+        TYPE_BLUR,          //
+        TYPE_OUTLINE,       //
+        TYPE_CUSTOM1,       //
+        TYPE_CUSTOM2,       //
+        NUM_TYPES           // 存储的图像数量
     };
 
 public:
