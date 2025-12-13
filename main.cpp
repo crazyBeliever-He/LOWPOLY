@@ -19,6 +19,7 @@ int main(int argc, char *argv[])
                               QString("未知错误: %1\n程序将退出。").arg(e.what()));
         return 1;
     }
+
     Widget w;
     w.show();
     LOG_INFO << "Application started";

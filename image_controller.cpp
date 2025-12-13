@@ -1,6 +1,6 @@
 #include "image_controller.h"
 #include <QFileDialog>
-
+#include "logger.h"
 
 ImageController::ImageController(ImageModel *model,
                                  ImageWidget *view,
@@ -9,55 +9,72 @@ ImageController::ImageController(ImageModel *model,
     imageModel(model),
     imageWidget(view)
 {
-    connect(imageModel, &ImageModel::currentDisplayImageChanged,
-            imageWidget, &ImageWidget::setImage);
+    connect(imageModel, &ImageModel::currentDisplayImageChanged,imageWidget, &ImageWidget::setImage);
+    connect(imageModel, &ImageModel::imageChanged, this, &ImageController::applyAllImageProcess);
+
 }
 
 void ImageController::openImageWithDialog(QWidget *parent)
 {
     QString path = QFileDialog::getOpenFileName(parent,
-                                                "Open Image",
+                                                tr("Open"),
                                                 "",
                                                 "Images (*.png *.jpg *.jpeg *.bmp)");
 
     if (path.isEmpty()){
-        emit errorOccurred("No file selected");
+        emit statusMessage(tr("Open canceled"));
         return;
     }
 
-    if (!imageModel->loadFromFile(path)) {
-        emit errorOccurred("Failed to load image: " + path);
-        return ;
+    emit statusMessage(tr("Loading..."));
+
+    if (imageModel->loadFromFile(path)) {
+        emit statusMessage(tr("Image loaded"));
+        LOG_INFO << "Load: " << path;
+        return;
     }
 
-    QImage image = imageModel->getcurrentImage();
-    emit imageOpened(image);
+    emit errorOccurred(tr("Failed to load image from: ") + path);
+
 }
 
 void ImageController::saveImageWithDialog(QWidget *parent)
 {
     if (imageModel->getcurrentImage().isNull()) {
-        emit errorOccurred("No image to save");
+        emit errorOccurred(tr("No image to save"));
         return;
     }
 
     QString path = QFileDialog::getSaveFileName(parent,
-                                                "Save",
+                                                tr("Save"),
                                                 "",
                                                 "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)");
 
     if (path.isEmpty()){
-        emit errorOccurred("No file path selected");
+        emit statusMessage(tr("Save canceled"));
         return;
     }
 
-    bool success = imageModel->saveToFile(path);
-    emit imageSaved(success);
+    emit statusMessage(tr("Saving..."));
+
+    if(imageModel->saveToFile(path)){
+        emit statusMessage(tr("Image saved"));
+        LOG_INFO << "Save: " << path;
+        return;
+    }
+
+    emit errorOccurred(tr("Failed to save image to: ") + path);
+}
+
+void ImageController::applyAllImageProcess()
+{
+    // TODO: 如果有多种不相关的图像处理，考虑并行处理
+    applyOutline();
+    applyGray();
 }
 
 void ImageController::applyOutline()
 {
-    emit processingStarted();
     QImage src = imageModel->getImage(ImageModel::TYPE_ORIGIN);
     QImage dst = src.convertToFormat(QImage::Format_RGB888);  // 转为 RGB 格式
 
@@ -79,12 +96,10 @@ void ImageController::applyOutline()
     }
 
     imageModel->setImage(ImageModel::TYPE_OUTLINE, dst); // 保存处理后的图像
-    emit processingCompleted(ImageModel::TYPE_OUTLINE);  // 处理完成，发出信号
 }
 
 void ImageController::applyGray()
 {
-    emit processingStarted();
     QImage src = imageModel->getImage(ImageModel::TYPE_ORIGIN);
     QImage dst = src.convertToFormat(QImage::Format_RGB888);
 
@@ -97,12 +112,10 @@ void ImageController::applyGray()
     }
 
     imageModel->setImage(ImageModel::TYPE_GRAY, dst);   // 保存处理后的图像
-    emit processingCompleted(ImageModel::TYPE_GRAY);    // 处理完成，发出信号
 }
 
 void ImageController::applyBlur()
 {
-    emit processingStarted();
     QImage src = imageModel->getImage(ImageModel::TYPE_ORIGIN);
     QImage dst = src;
 
@@ -123,5 +136,4 @@ void ImageController::applyBlur()
     }
 
     imageModel->setImage(ImageModel::TYPE_BLUR, dst);
-    emit processingCompleted(ImageModel::TYPE_BLUR);
 }

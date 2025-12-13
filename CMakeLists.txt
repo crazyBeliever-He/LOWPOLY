@@ -27,12 +27,14 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
         image_widget.h
         image_widget.cpp
-        image_controller.h
         image_model.h
-        image_controller.cpp
         image_model.cpp
         logger.h
         logger.cpp
+        image_controller.h
+        image_controller.cpp
+
+
 
 
     )

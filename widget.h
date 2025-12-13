@@ -23,6 +23,7 @@ public:
 
 public slots:
     void showErrorMessage(const QString &msg);
+    void showStatusMessage(const QString &msg);
 
 private:
     Ui::mainWidget *ui;

@@ -35,20 +35,20 @@ public:
     const QImage &getImage(ImageType type) const{return imageVector[type];}
     /*获取当前展示类型的图像*/
     const QImage &getcurrentImage() const{ return getImage(currentDisplayImageType);}
+    /*获取当前展示的类型*/
     ImageType getCurrentImageType() const{return currentDisplayImageType;}
-
-    /*设置指定类型的图像*/
+    /*设置指定类型的图像(用于保存处理后的图像)*/
     void setImage(ImageType type, const QImage &img);
     /*切换当前展示图像类型*/
     void setCurrentImageType(ImageType type);
 
 signals:
-    /*切换被操作的图像(重新加载图片)*/
+    /*切换源图像*/
     void imageChanged(ImageType type, const QImage &newImage);
     /*当前显示图像变化*/
     void currentDisplayImageChanged(const QImage &newImage);
     /*切换打开文件的路径*/
-    void filePathChanged(const QString &newPath);
+    //void filePathChanged(const QString &newPath);
 
 private:
     QVector<QImage> imageVector;
@@ -56,7 +56,8 @@ private:
 
     /*当前打开图像的路径*/
     QString currentPath;
-    bool modified = false;
+    /*图像是否变化*/
+    //bool modified = false;
 };
 
 

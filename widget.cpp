@@ -7,6 +7,7 @@
 #include "image_widget.h"       // 图像显示
 #include "image_model.h"        // 数据
 #include "image_controller.h"   // 业务逻辑
+#include "logger.h"             // 日志
 
 // 实现依赖（Implementation Dependency）放在 .cpp
 
@@ -23,9 +24,11 @@ Widget::Widget(QWidget *parent)
     ImageModel *imageModel = new ImageModel();
     imageController = new ImageController(imageModel, imageWidget, this);
 
-    // 连接信号和槽
+    // 连接报错和状态的信号和槽
     connect(imageController, &ImageController::errorOccurred,
             this, &Widget::showErrorMessage);
+    connect(imageController, &ImageController::statusMessage,
+            this, &Widget::showStatusMessage);
 
     // QTimer::singleShot(0, [this]() {
     //     qDebug() << "ImageWidget实际大小:" << imageWidget->size();
@@ -34,6 +37,7 @@ Widget::Widget(QWidget *parent)
     // });
 
     initMenus();
+    LOG_INFO << "Widget Initialization complete";
 }
 
 /*初始化界面组件*/
@@ -69,6 +73,11 @@ void Widget::initToolMenuWidget()
 void Widget::showErrorMessage(const QString &msg)
 {
     QMessageBox::warning(this, "Error", msg);
+}
+
+void Widget::showStatusMessage(const QString &msg)
+{
+    ui->statusLabel->setText(msg);
 }
 
 void Widget::showAboutProgram()

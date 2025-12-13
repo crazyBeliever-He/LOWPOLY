@@ -1,7 +1,6 @@
 #include "logger.h"
-#include <iostream>
 #include <stdexcept>
-
+#include <QDateTime>
 namespace logger
 {
 

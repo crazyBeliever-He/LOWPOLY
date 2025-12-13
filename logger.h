@@ -4,7 +4,6 @@
 #include <QString>
 #include <QFile>
 #include <QTextStream>
-#include <QDateTime>
 #include <QMutex>
 
 namespace logger

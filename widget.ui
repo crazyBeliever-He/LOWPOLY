@@ -95,7 +95,7 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QWidget" name="menuBar" native="true">
+    <widget class="QWidget" name="menuWidget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
        <horstretch>0</horstretch>
@@ -457,7 +457,7 @@ QPushButton:hover, QToolButton:hover {
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="statusBar" native="true">
+    <widget class="QWidget" name="statusWidget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
        <horstretch>0</horstretch>
@@ -525,7 +525,7 @@ QPushButton:hover, QToolButton:hover {
      <property name="autoFillBackground">
       <bool>true</bool>
      </property>
-     <widget class="QLabel" name="status">
+     <widget class="QLabel" name="statusLabel">
       <property name="geometry">
        <rect>
         <x>0</x>
