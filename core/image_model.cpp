@@ -27,20 +27,31 @@ bool ImageModel::loadFromFile(const QString &path)
         LOG_ERROR << "Load failed: Failed to load image - " << path;
         return false;
     }
+    if (img.format() == QImage::Format_Invalid) {
+        LOG_ERROR << "Load failed: Invalid image format - " << path;
+        return false;
+    }
+    // 转换为 RGB888 格式
+    if (img.format() != QImage::Format_RGB888 &&
+        img.format() != QImage::Format_Grayscale8 &&
+        img.format() != QImage::Format_Grayscale16)
+    {
+        img = img.convertToFormat(QImage::Format_RGB888);
+    }
 
     imageVector[TYPE_ORIGIN] = img;
-    currentDisplayImageType = TYPE_ORIGIN;
+    displayType = TYPE_ORIGIN;
     currentPath = path;
 
-    emit imageChanged(TYPE_ORIGIN, img);
-    emit currentDisplayImageChanged(img);
+    emit originImageChanged(TYPE_ORIGIN, img);
+    emit displayTypeUpdated(img);
 
     return true;
 }
 
 bool ImageModel::saveToFile(const QString &path, const QString &format, int quality)
 {
-    const QImage &img = getImage(currentDisplayImageType);
+    const QImage &img = getcurrentImage();
     if (img.isNull()){
         LOG_WARNING << "Save failed: No image to save.";
         return false;
@@ -72,12 +83,12 @@ void ImageModel::setImage(ImageType type, const QImage &img)
     imageVector[type] = img;
 }
 
-void ImageModel::setCurrentImageType(ImageType type)
+void ImageModel::setDisplayType(ImageType type)
 {
-    if (currentDisplayImageType == type) return;
+    if (displayType == type) return;
     if (type >= imageVector.size()) return;
 
-    currentDisplayImageType = type;
+    displayType = type;
     const QImage &img = imageVector[type];
-    emit currentDisplayImageChanged(img);
+    emit displayTypeUpdated(img);
 }

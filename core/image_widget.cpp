@@ -21,7 +21,7 @@ void ImageWidget::setImage(const QImage &img)
     adjustToWindowSize();
 
     //重绘,如果后续进行不同处理结果切换时出现不显示的bug，取消注释
-    //update();
+    update();
 }
 
 void ImageWidget::adjustToWindowSize()

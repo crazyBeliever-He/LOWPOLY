@@ -32,7 +32,7 @@ private:
 
 private:
     QImage presentImage;        // 当前显示的图像源数据
-    QPixmap cachedPixmap;       // 展示的图像数据
+    QPixmap cachedPixmap;       // 可能经过缩放偏移的图像数据
     double scale = 1.0;         // 缩放比例
     double cachedScale = 0.0;   // 缓存的缩放比例
     QPointF offset;             // 偏移量

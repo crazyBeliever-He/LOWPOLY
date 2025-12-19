@@ -9,7 +9,7 @@ class mainWidget;   // ui_widget.h文件里面定义的类，前向声明
 }
 QT_END_NAMESPACE
 
-// 类型依赖(Type Dependency)必须放在.h 加快编译速度，降低模块耦合，隐藏实现细节
+// 类型依赖(Type Dependency)放在.h 加快编译速度，降低模块耦合，隐藏实现细节
 // 前向声明，减少头文件依赖
 class ImageController;
 
@@ -31,9 +31,10 @@ private:
 
 private:
     void initMenus();
-    void initToolMenuWidget();
+    void initToolWidget();
 
 private slots:
+
     void showAboutProgram();
     void showAboutAuthor();
 

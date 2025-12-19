@@ -73,7 +73,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="resources.qrc">
-    <normaloff>:/icons/res/01.jpg</normaloff>:/icons/res/01.jpg</iconset>
+    <normaloff>:/res/01.jpg</normaloff>:/res/01.jpg</iconset>
   </property>
   <property name="autoFillBackground">
    <bool>true</bool>
@@ -364,7 +364,7 @@ QPushButton:hover, QToolButton:hover {
          <property name="geometry">
           <rect>
            <x>20</x>
-           <y>20</y>
+           <y>270</y>
            <width>131</width>
            <height>21</height>
           </rect>
@@ -450,6 +450,36 @@ QPushButton:hover, QToolButton:hover {
          <property name="text">
           <string>PushButton</string>
          </property>
+        </widget>
+        <widget class="QComboBox" name="comboBox">
+         <property name="geometry">
+          <rect>
+           <x>50</x>
+           <y>10</y>
+           <width>69</width>
+           <height>22</height>
+          </rect>
+         </property>
+         <item>
+          <property name="text">
+           <string>origin</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>gray</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>blur</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>outline</string>
+          </property>
+         </item>
         </widget>
        </widget>
       </item>

@@ -34,25 +34,27 @@ public:
     /*获取指定类型的图像*/
     const QImage &getImage(ImageType type) const{return imageVector[type];}
     /*获取当前展示类型的图像*/
-    const QImage &getcurrentImage() const{ return getImage(currentDisplayImageType);}
+    const QImage &getcurrentImage() const{ return imageVector[displayType];}
     /*获取当前展示的类型*/
-    ImageType getCurrentImageType() const{return currentDisplayImageType;}
+    //ImageType getCurrentImageType() const{return displayType;}
     /*设置指定类型的图像(用于保存处理后的图像)*/
     void setImage(ImageType type, const QImage &img);
+
+public slots:
     /*切换当前展示图像类型*/
-    void setCurrentImageType(ImageType type);
+    void setDisplayType(ImageType type);
 
 signals:
     /*切换源图像*/
-    void imageChanged(ImageType type, const QImage &newImage);
+    void originImageChanged(ImageType type, const QImage &newImage);
     /*当前显示图像变化*/
-    void currentDisplayImageChanged(const QImage &newImage);
+    void displayTypeUpdated(const QImage &newImage);
     /*切换打开文件的路径*/
     //void filePathChanged(const QString &newPath);
 
 private:
     QVector<QImage> imageVector;
-    ImageType currentDisplayImageType = TYPE_ORIGIN;
+    ImageType displayType = TYPE_ORIGIN;
 
     /*当前打开图像的路径*/
     QString currentPath;

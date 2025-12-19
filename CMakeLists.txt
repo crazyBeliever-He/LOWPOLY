@@ -9,14 +9,27 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
+
+set(TS_FILES translation/TestLowPoly04_zh_CN.ts)
 
 set(PROJECT_SOURCES
         main.cpp
         widget.cpp
         widget.h
         widget.ui
+        core/image_controller.h
+        core/image_model.h
+        core/image_widget.h
+        core/image_controller.cpp
+        core/image_model.cpp
+        core/image_widget.cpp
+        algorithm/edge_drawing_gray.h
+        algorithm/edge_drawing_gray.cpp
+        utils/logger.cpp
+        utils/logger.h
+        ${TS_FILES}
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -24,24 +37,14 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         resources.qrc
-
-        image_widget.h
-        image_widget.cpp
-        image_model.h
-        image_model.cpp
-        logger.h
-        logger.cpp
-        image_controller.h
-        image_controller.cpp
-
-
-
-
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET TestLowPoly04 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
+
+    qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+
 else()
     if(ANDROID)
         add_library(TestLowPoly04 SHARED
@@ -54,7 +57,16 @@ else()
             ${PROJECT_SOURCES}
         )
     endif()
+    qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
+
+# target_include_directories: 将头文件搜索路径添加到指定的目标
+# PRIVATE: 表示这些目录只会在编译目标时使用，其他依赖于该目标的目标不会受到影响
+target_include_directories(TestLowPoly04 PRIVATE
+    ${CMAKE_SOURCE_DIR}/core
+    ${CMAKE_SOURCE_DIR}/utils
+    ${CMAKE_SOURCE_DIR}/algorithm
+)
 
 target_link_libraries(TestLowPoly04 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
