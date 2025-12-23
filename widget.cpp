@@ -24,18 +24,13 @@ Widget::Widget(QWidget *parent)
     ImageModel *imageModel = new ImageModel();
     imageController = new ImageController(imageModel, imageWidget, this);
 
-    // 连接报错和状态的信号和槽
-    connect(imageController, &ImageController::errorOccurred,
-            this, &Widget::showErrorMessage);
-    connect(imageController, &ImageController::statusMessage,
-            this, &Widget::showStatusMessage);
-
-    initMenus();
+    initMenuWidget();
     initToolWidget();
+    initStatusWidget();
 }
 
 /*初始化界面组件*/
-void Widget::initMenus()
+void Widget::initMenuWidget()
 {
     //file menu
     QMenu *fileMenu = new QMenu(this->ui->fileButton);
@@ -48,33 +43,45 @@ void Widget::initMenus()
     connect(saveImageAction, &QAction::triggered, this, [this]() {
         imageController->saveImageWithDialog(this);
     });
-    //help menu
-    QMenu *helpMenu = new QMenu(this->ui->helpButton);
-    ui->helpButton->setMenu(helpMenu);
-    QAction *guideAction = helpMenu->addAction("Guide");
-    QAction *defaultSettingsAction = helpMenu->addAction("DefaultSettings");
-    // Settings with checkable options
-    QAction *settingAAction = helpMenu->addAction("SettingA");
-    settingAAction->setCheckable(true); // Make it checkable
-    settingAAction->setChecked(true);   // Set the initial state (checked or unchecked)
 
-    QAction *settingBAction = helpMenu->addAction("SettingB");
-    settingBAction->setCheckable(true); // Make it checkable
-    settingBAction->setChecked(false);  // Set the initial state (checked or unchecked)
+    //setting menu
+    initSettingBtnInMenuWidget();
 
     //about menu
-    QMenu *settingMenu = new QMenu(this->ui->aboutButton);
-    ui->aboutButton->setMenu(settingMenu);
-    QAction *aboutProgramAction = settingMenu->addAction("Program");
-    QAction *aboutAuthorAction = settingMenu->addAction("Auther");
+    QMenu *aboutMenu = new QMenu(this->ui->aboutButton);
+    ui->aboutButton->setMenu(aboutMenu);
+    QAction *aboutProgramAction = aboutMenu->addAction("Program");
+    QAction *aboutAuthorAction = aboutMenu->addAction("Auther");
     connect(aboutProgramAction, &QAction::triggered, this, &Widget::showAboutProgram);
     connect(aboutAuthorAction, &QAction::triggered, this, &Widget::showAboutAuthor);
+}
+
+void Widget::initSettingBtnInMenuWidget()
+{
+    // 图像自适应窗口大小
+    QMenu *settingMenu = new QMenu(this->ui->settingButton);
+    ui->settingButton->setMenu(settingMenu);
+    QAction *autoSizeAction = settingMenu->addAction("Auto Size");
+    autoSizeAction->setCheckable(true);
+    connect(autoSizeAction, &QAction::toggled, this, [this](bool checked) {
+        imageController->onAutoSize(checked);
+    });
+    autoSizeAction->setChecked(true);
+
+    //
 }
 
 void Widget::initToolWidget()
 {
     connect(ui->comboBox, &QComboBox::currentIndexChanged,
             imageController, &ImageController::onImageTypeSelected);
+}
+void Widget::initStatusWidget()
+{
+    // 连接报错和状态信息
+    connect(imageController, &ImageController::errorOccurred, this, &Widget::showErrorMessage);
+    connect(imageController, &ImageController::statusMessage, this, &Widget::showStatusMessage);
+
 }
 
 void Widget::showErrorMessage(const QString &msg)
@@ -92,7 +99,7 @@ void Widget::showAboutProgram()
     QMessageBox::information(this,
                              "About Program",
                              "This program is a demo for image processing.\n"
-                             "Version 1.0");
+                             "Version 0.1");
 }
 
 void Widget::showAboutAuthor()
@@ -115,4 +122,5 @@ void Widget::showAboutAuthor()
 Widget::~Widget()
 {
     delete ui;
+    delete imageController;
 }

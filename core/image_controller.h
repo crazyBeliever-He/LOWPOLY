@@ -19,11 +19,13 @@ public:
     ImageController(ImageModel *model,
                     ImageWidget *view,
                     QObject *parent = nullptr);             // Qt对象父对象
+    ~ImageController();
 
 public slots:
-    void onImageTypeSelected(int type);
     void openImageWithDialog(QWidget *parent = nullptr);    // 打开图像的函数
     void saveImageWithDialog(QWidget *parent = nullptr);    // 保存图像的函数
+    void onImageTypeSelected(int type);
+    void onAutoSize(bool isAuto){ imageWidget->autoSize = isAuto;};
     void onApplyAllImageProcess();                          // 执行所有图像处理函数
 
 private:
@@ -34,6 +36,7 @@ private:
     ImageModel *imageModel;
     ImageWidget *imageWidget;
     GrayEdgeDrawing *grayEdgeDrawing;
+
 };
 
 #endif // IMAGE_CONTROLLER_H

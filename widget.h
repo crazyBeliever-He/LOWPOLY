@@ -30,8 +30,10 @@ private:
     ImageController *imageController;
 
 private:
-    void initMenus();
+    void initMenuWidget();
+    void initSettingBtnInMenuWidget();
     void initToolWidget();
+    void initStatusWidget();
 
 private slots:
 

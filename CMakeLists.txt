@@ -37,6 +37,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         resources.qrc
+        algorithm/edge_drawing_color.h
+        algorithm/edge_drawing_color.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET TestLowPoly04 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -66,9 +68,13 @@ target_include_directories(TestLowPoly04 PRIVATE
     ${CMAKE_SOURCE_DIR}/core
     ${CMAKE_SOURCE_DIR}/utils
     ${CMAKE_SOURCE_DIR}/algorithm
+    ${CMAKE_SOURCE_DIR}/exlib
 )
 
-target_link_libraries(TestLowPoly04 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(TestLowPoly04 PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    "${CMAKE_CURRENT_SOURCE_DIR}/exlib/Dll2.lib"
+)
 
 # # cuda external library
 # target_include_directories(TestLowPoly04 PRIVATE

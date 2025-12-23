@@ -226,7 +226,7 @@ QPushButton:hover, QToolButton:hover {
        </widget>
       </item>
       <item>
-       <widget class="QToolButton" name="helpButton">
+       <widget class="QToolButton" name="settingButton">
         <property name="minimumSize">
          <size>
           <width>30</width>
@@ -234,12 +234,15 @@ QPushButton:hover, QToolButton:hover {
          </size>
         </property>
         <property name="text">
-         <string>Help</string>
+         <string>Setting</string>
+        </property>
+        <property name="popupMode">
+         <enum>QToolButton::ToolButtonPopupMode::InstantPopup</enum>
         </property>
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer">
+       <spacer name="spacerHor">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
         </property>

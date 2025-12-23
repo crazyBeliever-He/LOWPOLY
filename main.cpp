@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     const QStringList uiLanguages = QLocale::system().uiLanguages();
     for (const QString &locale : uiLanguages) {
         const QString baseName = "TestLowPoly04_" + QLocale(locale).name();
-        qDebug() << ":/" + baseName + ".qm";
+        LOG_INFO << "Translation:" + baseName;
         if (translator.load(":/translation/" + baseName + ".qm")) {
             a.installTranslator(&translator);
             break;

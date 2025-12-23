@@ -16,7 +16,12 @@ public:
 
     /*设置并显示图像*/
     void setImage(const QImage &img);
-    //TODO: 提供从外部直接拖放图片进入操作窗口的功能
+
+public:
+    /* 是否自适应窗口大小 */
+    bool autoSize;
+
+
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -36,7 +41,7 @@ private:
     double scale = 1.0;         // 缩放比例
     double cachedScale = 0.0;   // 缓存的缩放比例
     QPointF offset;             // 偏移量
-    QPointF lastMousePos;       //
+    QPointF lastMousePos;       // 鼠标最新位置
 };
 
 #endif // IMAGE_WIDGET_H
