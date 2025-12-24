@@ -5,13 +5,14 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui {      // 命名空间
-class mainWidget;   // ui_widget.h文件里面定义的类，前向声明
+class mainWidget;       // ui_widget.h文件里面定义的类，前向声明
 }
 QT_END_NAMESPACE
 
 // 类型依赖(Type Dependency)放在.h 加快编译速度，降低模块耦合，隐藏实现细节
 // 前向声明，减少头文件依赖
 class ImageController;
+class EdParamDialog;
 
 class Widget : public QWidget
 {
@@ -28,6 +29,7 @@ public slots:
 private:
     Ui::mainWidget *ui;
     ImageController *imageController;
+    EdParamDialog *edParamDialog;
 
 private:
     void initMenuWidget();

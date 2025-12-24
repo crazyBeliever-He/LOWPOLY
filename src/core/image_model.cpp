@@ -81,11 +81,15 @@ void ImageModel::setImage(ImageType type, const QImage &img)
 {
     if (img.isNull()) return;
     imageVector[type] = img;
+    if (type == displayType)
+    {
+        setDisplayType(type);
+    }
 }
 
 void ImageModel::setDisplayType(ImageType type)
 {
-    if (displayType == type) return;
+    //if (displayType == type) return;
     if (type >= imageVector.size()) return;
 
     displayType = type;

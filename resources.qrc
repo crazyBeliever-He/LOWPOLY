@@ -3,7 +3,7 @@
         <file>res/01.jpg</file>
         <file>res/default.jpg</file>
         <file>res/setting.svg</file>
-        <file>translation/TestLowPoly04_zh_CN.qm</file>
-        <file>translation/TestLowPoly04_zh_CN.ts</file>
+        <file>i18n/translation/TestLowPoly04_zh_CN.qm</file>
+        <file>i18n/translation/TestLowPoly04_zh_CN.ts</file>
     </qresource>
 </RCC>

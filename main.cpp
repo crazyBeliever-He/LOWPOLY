@@ -3,17 +3,21 @@
 #include <QTranslator>
 #include "logger.h"
 #include <QMessageBox>
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
     QTranslator translator;
+    QString translation;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
-    for (const QString &locale : uiLanguages) {
+    for (const QString &locale : uiLanguages)
+    {
         const QString baseName = "TestLowPoly04_" + QLocale(locale).name();
-        LOG_INFO << "Translation:" + baseName;
-        if (translator.load(":/translation/" + baseName + ".qm")) {
+        if (translator.load(":/i18n/translation/" + baseName + ".qm"))
+        {   //i18n 是 internationalization的缩写
             a.installTranslator(&translator);
+            translation = baseName;
             break;
         }
     }
@@ -35,7 +39,7 @@ int main(int argc, char *argv[])
     }
     Widget w;
     w.show();
-    LOG_INFO << "Application started";
+    LOG_INFO << "Application started. Traslation: " << translation;
 
     int result = a.exec();
     logger::Logger::destroy();

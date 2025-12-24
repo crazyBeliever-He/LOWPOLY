@@ -72,7 +72,7 @@
    <string>testLowPoly</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resources.qrc">
+   <iconset resource="../../resources.qrc">
     <normaloff>:/res/01.jpg</normaloff>:/res/01.jpg</iconset>
   </property>
   <property name="autoFillBackground">
@@ -582,7 +582,7 @@ QPushButton:hover, QToolButton:hover {
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../../resources.qrc"/>
  </resources>
  <connections/>
 </ui>
