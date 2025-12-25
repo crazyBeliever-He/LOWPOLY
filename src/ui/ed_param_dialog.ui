@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>465</width>
-    <height>343</height>
+    <width>560</width>
+    <height>420</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,16 +24,147 @@
     <number>0</number>
    </property>
    <property name="bottomMargin">
-    <number>20</number>
+    <number>15</number>
    </property>
    <property name="horizontalSpacing">
-    <number>30</number>
+    <number>10</number>
    </property>
    <property name="verticalSpacing">
     <number>5</number>
    </property>
-   <item row="1" column="0" colspan="2">
-    <widget class="QWidget" name="Button" native="true">
+   <item row="2" column="1">
+    <widget class="QWidget" name="UncommonWidget" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_MaxErrorThreshold">
+        <property name="text">
+         <string>MaxErrorThreshold</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_MinLineLength">
+        <property name="text">
+         <string>MinLineLength</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QDoubleSpinBox" name="LineFitErrorThreshold">
+        <property name="maximum">
+         <double>10.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QCheckBox" name="NFAValidation">
+        <property name="text">
+         <string>NFAValidation</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_NFAValidation">
+        <property name="text">
+         <string>NFAValidation</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="MinLineLength">
+        <property name="minimum">
+         <number>-1</number>
+        </property>
+        <property name="maximum">
+         <number>2147483647</number>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_LineFitErrorThreshold">
+        <property name="text">
+         <string>LineFitErrorThreshold</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QDoubleSpinBox" name="MaxDistanceBetweenTwoLines">
+        <property name="maximum">
+         <double>20.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_MaxDistanceBetweenTwoLines">
+        <property name="text">
+         <string>MaxDistanceBetweenTwoLines</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QDoubleSpinBox" name="MaxErrorThreshold">
+        <property name="maximum">
+         <double>10.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLabel" name="title_Uncommon">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>uncommon</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QWidget" name="ButtonWidget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -57,14 +188,7 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QPushButton" name="confirmButton">
-        <property name="text">
-         <string>confirm</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer">
+       <spacer name="spacer2_hor">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
         </property>
@@ -77,98 +201,72 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="cancelButton">
+       <widget class="QPushButton" name="resetButton">
         <property name="text">
-         <string>cancel</string>
+         <string>reset</string>
+        </property>
+        <property name="autoDefault">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QWidget" name="Uncommon" native="true">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_2">
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-      <property name="spacing">
-       <number>0</number>
-      </property>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_2">
+      <item>
+       <spacer name="spacer1_hor">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="confirmButton">
         <property name="text">
-         <string>TextLabel</string>
+         <string>comfirm</string>
+        </property>
+        <property name="autoDefault">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="QSpinBox" name="MinLineLength"/>
-      </item>
-      <item row="3" column="1">
-       <widget class="QDoubleSpinBox" name="MaxErrorThreshold"/>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>TextLabel</string>
+      <item>
+       <spacer name="spacer3_hor">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QDoubleSpinBox" name="LineFitErrorThreshold"/>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>TextLabel</string>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
         </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QCheckBox" name="NFAValidation">
-        <property name="text">
-         <string>NFAValidation</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QDoubleSpinBox" name="MaxDistanceBetweenTwoLines"/>
+       </spacer>
       </item>
      </layout>
     </widget>
    </item>
    <item row="0" column="0">
-    <widget class="QWidget" name="Common" native="true">
+    <widget class="QLabel" name="title_Common">
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>common</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QWidget" name="CommonWidget" native="true">
      <layout class="QGridLayout" name="gridLayout_3">
       <property name="leftMargin">
        <number>0</number>
@@ -185,56 +283,82 @@
       <property name="spacing">
        <number>0</number>
       </property>
-      <item row="2" column="1">
-       <widget class="QSpinBox" name="GradientThresholdValue"/>
-      </item>
-      <item row="0" column="1">
-       <widget class="QCheckBox" name="PFmode">
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_AnchorThresholdValue">
         <property name="text">
-         <string>PFmode</string>
+         <string>AnchorThresholdValue</string>
         </property>
        </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QSpinBox" name="AnchorThresholdValue"/>
-      </item>
-      <item row="4" column="1">
-       <widget class="QSpinBox" name="ScanInterval"/>
+       <widget class="QSpinBox" name="AnchorThresholdValue">
+        <property name="maximum">
+         <number>2147483647</number>
+        </property>
+       </widget>
       </item>
       <item row="6" column="1">
-       <widget class="QDoubleSpinBox" name="Sigma"/>
+       <widget class="QDoubleSpinBox" name="Sigma">
+        <property name="maximum">
+         <double>10.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+        <property name="value">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
       </item>
       <item row="5" column="1">
-       <widget class="QSpinBox" name="MinPathLength"/>
+       <widget class="QSpinBox" name="MinPathLength">
+        <property name="minimum">
+         <number>3</number>
+        </property>
+        <property name="maximum">
+         <number>2147483647</number>
+        </property>
+       </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QComboBox" name="EdgeDetectionOperator">
-        <item>
-         <property name="text">
-          <string> 0:PREWITT</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>1:SOBEL</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>2:SCHARR</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>3:LSD</string>
-         </property>
-        </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_SumFlag">
+        <property name="text">
+         <string>SumFlag</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_Sigma">
+        <property name="text">
+         <string>Sigma</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_EdgeDetectionOperator">
+        <property name="text">
+         <string>EdgeDetectionOperator</string>
+        </property>
        </widget>
       </item>
       <item row="7" column="1">
        <widget class="QCheckBox" name="SumFlag">
         <property name="text">
          <string>SumFlag</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_ScanInterval">
+        <property name="text">
+         <string>ScanInterval</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QCheckBox" name="PFmode">
+        <property name="text">
+         <string>PFmode</string>
         </property>
        </widget>
       </item>
@@ -245,56 +369,78 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_7">
+      <item row="1" column="1">
+       <widget class="QComboBox" name="EdgeDetectionOperator">
+        <item>
+         <property name="text">
+          <string>PREWITT</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SOBEL</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SCHARR</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>LSD</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_MinPathLength">
         <property name="text">
-         <string>TextLabel</string>
+         <string>MinPathLength</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="GradientThresholdValue">
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>2147483647</number>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QSpinBox" name="ScanInterval">
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>2147483647</number>
         </property>
        </widget>
       </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="label_8">
+       <widget class="QLabel" name="label_GradientThresholdValue">
         <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_9">
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_10">
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_11">
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_12">
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="0">
-       <widget class="QLabel" name="label_13">
-        <property name="text">
-         <string>TextLabel</string>
+         <string>GradientThresholdValue</string>
         </property>
        </widget>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_Status">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
     </widget>
    </item>
   </layout>

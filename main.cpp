@@ -8,19 +8,19 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    QTranslator translator;
-    QString translation;
-    const QStringList uiLanguages = QLocale::system().uiLanguages();
-    for (const QString &locale : uiLanguages)
-    {
-        const QString baseName = "TestLowPoly04_" + QLocale(locale).name();
-        if (translator.load(":/i18n/translation/" + baseName + ".qm"))
-        {   //i18n 是 internationalization的缩写
-            a.installTranslator(&translator);
-            translation = baseName;
-            break;
-        }
-    }
+    QString translation = "";
+    // QTranslator translator;
+    // const QStringList uiLanguages = QLocale::system().uiLanguages();
+    // for (const QString &locale : uiLanguages)
+    // {
+    //     const QString baseName = "TestLowPoly04_" + QLocale(locale).name();
+    //     if (translator.load(":/i18n/translation/" + baseName + ".qm"))
+    //     {   //i18n 是 internationalization的缩写
+    //         a.installTranslator(&translator);
+    //         translation = baseName;
+    //         break;
+    //     }
+    // }
 
     try {
         logger::Logger::init();

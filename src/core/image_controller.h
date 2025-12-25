@@ -13,7 +13,8 @@ class ImageController : public QObject
 signals:
     void errorOccurred(const QString &message);             // 错误
     void statusMessage(const QString &message);             // 状态
-    void displayTypeRequested(ImageModel::ImageType type);
+    void requestUiReset();      // 请求重置ui的一些设置
+    //void displayTypeRequested(ImageModel::ImageType type);
 
 public:
     //POD (Plain Old Data) 结构体（不含虚函数、构造函数、容器等）

@@ -11,17 +11,16 @@ ImageController::ImageController(ImageModel *model,
     imageWidget(view)
 {
     //grayEdgeDrawing = new GrayEdgeDrawing();
-
     // 初始化自己持有的 edge drawing 函数的参数
     std::memset(&edParams, 0, sizeof(edParams));
     setEdParams();
-
     // 切换源图
     connect(imageModel, &ImageModel::originImageChanged,
             this, &ImageController::applyAllImageProcess);
 
-    connect(this, &ImageController::displayTypeRequested,
-            imageModel, &ImageModel::setDisplayType);
+    // connect(this, &ImageController::displayTypeRequested,
+    //         imageModel, &ImageModel::setDisplayType);
+    // ImageModel 和 ImageWidget 解耦
     connect(imageModel, &ImageModel::displayTypeUpdated,
             imageWidget, &ImageWidget::setImage);
 }
@@ -32,62 +31,60 @@ void ImageController::openImageWithDialog(QWidget *parent)
                                                 tr("Open"),
                                                 "C:/Users/h7286/Desktop/image",
                                                 "Images (*.jpg *.jpeg *.png *.bmp *.tif *.tiff)");
-
-    if (path.isEmpty()){
+    if (path.isEmpty())
+    {
         emit statusMessage(tr("Open canceled"));
         return;
     }
-
-    emit statusMessage(tr("Loading..."));
-
+    //emit statusMessage(tr("Loading..."));
     if (imageModel->loadFromFile(path)) {
         emit statusMessage(tr("Image loaded"));
         LOG_INFO << "Load: " << path;
         return;
     }
-
     emit errorOccurred(tr("Failed to load image from: ") + path);
-
 }
 
 void ImageController::saveImageWithDialog(QWidget *parent)
 {
-    if (imageModel->getcurrentImage().isNull()) {
+    if (imageModel->getcurrentImage().isNull())
+    {
         emit errorOccurred(tr("No image to save"));
         return;
     }
-
     QString path = QFileDialog::getSaveFileName(parent,
                                                 tr("Save"),
                                                 "",
                                                 "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp);;TIFF(*.tiff *.tif)");
-
-    if (path.isEmpty()){
+    if (path.isEmpty())
+    {
         emit statusMessage(tr("Save canceled"));
         return;
     }
-
-    emit statusMessage(tr("Saving..."));
-
-    if(imageModel->saveToFile(path)){
+    //emit statusMessage(tr("Saving..."));
+    if(imageModel->saveToFile(path))
+    {
         emit statusMessage(tr("Image saved"));
         LOG_INFO << "Save: " << path;
         return;
     }
-
     emit errorOccurred(tr("Failed to save image to: ") + path);
 }
 
 void ImageController::onImageTypeSelected(int intType)
 {
-    ImageModel::ImageType imageType;
-    if (intType >= 0 && intType < ImageModel::NUM_TYPES) {
+    ImageModel::ImageType imageType = ImageModel::TYPE_ORIGIN;
+    if (intType >= 0 && intType < ImageModel::NUM_TYPES)
+    {
         imageType = static_cast<ImageModel::ImageType>(intType);
-    } else{
-        LOG_ERROR << "Undefine image type.";
-        return;
+        imageModel->setDisplayType(imageType);
     }
-    emit displayTypeRequested(imageType);
+}
+
+void ImageController::applyAllImageProcess()
+{
+    emit requestUiReset();
+    edgeDrawing();
 }
 
 void ImageController::setEdParams(bool PFmode,
@@ -112,24 +109,22 @@ void ImageController::setEdParams(bool PFmode,
                               NFAValidation,
                               MinLineLength, MaxDistanceBetweenTwoLines,
                               LineFitErrorThreshold, MaxErrorThreshold);
-
     // 如果参数修改就重新处理
-    if (!EDParamsUtil::compareEDParams(this->edParams, newParams)) {
+    if (!EDParamsUtil::compareEDParams(this->edParams, newParams))
+    {
         this->edParams = newParams;
-        edgeDrawing();
+        applyAllImageProcess();
     }
 }
 
 void ImageController::setEDParams(const opencved::EDParams& newParams)
 {
-    // 如果参数修改就重新处理
-    if (!EDParamsUtil::compareEDParams(this->edParams, newParams)) {
+    if (!EDParamsUtil::compareEDParams(this->edParams, newParams))
+    {
         this->edParams = newParams;
-        edgeDrawing();
+        applyAllImageProcess();
     }
 }
-
-
 
 void ImageController::edgeDrawing()
 {
@@ -180,11 +175,6 @@ void ImageController::edgeDrawing()
     // 5. 更新模型
     imageModel->setImage(ImageModel::TYPE_OUTLINE, edgeMap);
     emit statusMessage(tr("Edge Drawing segments detected: %1").arg(results.segmentCount));
-}
-
-void ImageController::applyAllImageProcess()
-{
-    edgeDrawing();
 }
 
 

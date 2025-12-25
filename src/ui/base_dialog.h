@@ -23,11 +23,6 @@ public:
 signals:
     void dataSubmitted(const QVariant &data);
 
-protected slots:
-    // 子类点击“提交”按钮时链接到这个槽
-    void handleSubmit() {
-        emit dataSubmitted(getData());
-    }
 };
 
 // // ---------------------------------------------------------

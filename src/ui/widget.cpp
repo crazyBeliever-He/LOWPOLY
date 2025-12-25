@@ -86,12 +86,10 @@ void Widget::initSettingBtnInMenuWidget()
     QAction *edParamAction = settingMenu->addAction(tr("Edge Drawing Params"));
     connect(edParamAction, &QAction::triggered, this, [this]() {
         if (edParamDialog) {
-            // 将主窗口当前存储的数据同步给子窗口
+            // 将主窗口当前存储的数据同步给子窗口, 显示窗口
             edParamDialog->setData(QVariant::fromValue(imageController->edParams));
-            // 3. 显示窗口
             edParamDialog->show();
             edParamDialog->raise();
-            edParamDialog->activateWindow();
         }
     });
 
@@ -101,6 +99,11 @@ void Widget::initToolWidget()
 {
     connect(ui->comboBox, &QComboBox::currentIndexChanged,
             imageController, &ImageController::onImageTypeSelected);
+    // 如果有其他因为切换源图需要同步的ui组件,可以把“同步 UI 状态”写成一个成员函数, 目前就ui->comboBox需要同步
+    connect(imageController, &ImageController::requestUiReset, this, [this](){
+        QSignalBlocker blocker(ui->comboBox);
+        ui->comboBox->setCurrentIndex(0);
+    });
 }
 void Widget::initStatusWidget()
 {
