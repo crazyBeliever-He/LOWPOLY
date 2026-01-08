@@ -363,37 +363,11 @@ QPushButton:hover, QToolButton:hover {
         <property name="autoFillBackground">
          <bool>true</bool>
         </property>
-        <widget class="QPushButton" name="reset">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>270</y>
-           <width>131</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>展示：原始图像大小</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="pushButton_3">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>70</y>
-           <width>75</width>
-           <height>23</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>PushButton</string>
-         </property>
-        </widget>
         <widget class="QPushButton" name="pushButton_4">
          <property name="geometry">
           <rect>
-           <x>80</x>
-           <y>70</y>
+           <x>50</x>
+           <y>60</y>
            <width>75</width>
            <height>23</height>
           </rect>
@@ -405,8 +379,8 @@ QPushButton:hover, QToolButton:hover {
         <widget class="QPushButton" name="pushButton_5">
          <property name="geometry">
           <rect>
-           <x>0</x>
-           <y>120</y>
+           <x>50</x>
+           <y>140</y>
            <width>75</width>
            <height>23</height>
           </rect>
@@ -418,8 +392,8 @@ QPushButton:hover, QToolButton:hover {
         <widget class="QPushButton" name="pushButton_6">
          <property name="geometry">
           <rect>
-           <x>80</x>
-           <y>120</y>
+           <x>50</x>
+           <y>100</y>
            <width>75</width>
            <height>23</height>
           </rect>
@@ -431,8 +405,8 @@ QPushButton:hover, QToolButton:hover {
         <widget class="QPushButton" name="pushButton_7">
          <property name="geometry">
           <rect>
-           <x>0</x>
-           <y>170</y>
+           <x>50</x>
+           <y>220</y>
            <width>75</width>
            <height>23</height>
           </rect>
@@ -444,8 +418,8 @@ QPushButton:hover, QToolButton:hover {
         <widget class="QPushButton" name="pushButton_8">
          <property name="geometry">
           <rect>
-           <x>80</x>
-           <y>170</y>
+           <x>50</x>
+           <y>180</y>
            <width>75</width>
            <height>23</height>
           </rect>
@@ -458,7 +432,7 @@ QPushButton:hover, QToolButton:hover {
          <property name="geometry">
           <rect>
            <x>50</x>
-           <y>10</y>
+           <y>20</y>
            <width>69</width>
            <height>22</height>
           </rect>
@@ -470,17 +444,17 @@ QPushButton:hover, QToolButton:hover {
          </item>
          <item>
           <property name="text">
-           <string>gray</string>
+           <string>edge drawing line</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>blur</string>
+           <string>douglas peucker point</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>outline</string>
+           <string>douglas peucker line</string>
           </property>
          </item>
         </widget>

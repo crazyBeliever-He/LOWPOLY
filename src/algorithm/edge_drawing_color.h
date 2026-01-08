@@ -1,4 +1,0 @@
-#ifndef EDGE_DRAWING_COLOR_H
-#define EDGE_DRAWING_COLOR_H
-
-#endif // EDGE_DRAWING_COLOR_H

@@ -5,12 +5,12 @@
 #include <QMessageBox>
 #include <QMetaType>
 
-#include "edge_drawing_lib.h"
-
 #include "image_widget.h"       // 图像显示
 #include "image_model.h"        // 数据
 #include "image_controller.h"   // 业务逻辑
-#include "ed_param_dialog.h"    // edge drawing 算法参数窗口
+#include "algorithm_params.h"       // 业务需要的结构体
+#include "edge_drawing_dialog.h"    // edge drawing 算法参数窗口
+#include "douglas_peucker_dialog.h" // douglas peucker 算法参数窗口
 
 // 实现依赖（Implementation Dependency）放在 .cpp
 
@@ -20,24 +20,19 @@ Widget::Widget(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // 注册结构体到Qt元对象系统
-    qRegisterMetaType<opencved::EDParams>("EDParams");
-
     // image controller, model, widget
     ImageWidget *imageWidget = new ImageWidget(this->ui->middleWidget);
     imageWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     ui->middleWidget->layout()->addWidget(imageWidget);
-
     ImageModel *imageModel = new ImageModel();
     imageController = new ImageController(imageModel, imageWidget, this);
 
-    // main widget
+    // init widgets
     initMenuWidget();
-    initToolWidget();
+    initContentWidget();
     initStatusWidget();
 }
 
-/*初始化界面组件*/
 void Widget::initMenuWidget()
 {
     //file menu
@@ -53,7 +48,7 @@ void Widget::initMenuWidget()
     });
 
     //setting menu
-    initSettingBtnInMenuWidget();
+    initSettingBtnInMenu();
 
     //about menu
     QMenu *aboutMenu = new QMenu(this->ui->aboutButton);
@@ -64,12 +59,12 @@ void Widget::initMenuWidget()
     connect(aboutAuthorAction, &QAction::triggered, this, &Widget::showAboutAuthor);
 }
 
-void Widget::initSettingBtnInMenuWidget()
+void Widget::initSettingBtnInMenu()
 {
     QMenu *settingMenu = new QMenu(this->ui->settingButton);
     ui->settingButton->setMenu(settingMenu);
 
-    // 图像自适应窗口大小
+    // 1. 图像自适应窗口大小
     QAction *autoSizeAction = settingMenu->addAction(tr("Auto Size"));
     autoSizeAction->setCheckable(true);
     connect(autoSizeAction, &QAction::toggled, this, [this](bool checked) {
@@ -77,40 +72,82 @@ void Widget::initSettingBtnInMenuWidget()
     });
     autoSizeAction->setChecked(true);
 
-    //Edge drawing 参数设置
-    edParamDialog = new EdParamDialog(this);
-    connect(edParamDialog, &BaseDialog::dataSubmitted, this, [this](const QVariant &data) {
-        imageController->setEDParams(data.value<opencved::EDParams>());
+    // 2. Edge drawing 参数设置
+    settingMenu->addAction(tr("Edge Drawing Settings"), this, [this](){
+        openDialog<opencved::EDParams>(tr("Edge Drawin Params"));
     });
 
-    QAction *edParamAction = settingMenu->addAction(tr("Edge Drawing Params"));
-    connect(edParamAction, &QAction::triggered, this, [this]() {
-        if (edParamDialog) {
-            // 将主窗口当前存储的数据同步给子窗口, 显示窗口
-            edParamDialog->setData(QVariant::fromValue(imageController->edParams));
-            edParamDialog->show();
-            edParamDialog->raise();
-        }
+    // 3. douglas peucker 参数设置
+    QAction *dpParamAction = settingMenu->addAction(tr("Douglas Peucker Settings"));
+    connect(dpParamAction, &QAction::triggered, this, [this](){
+        openDialog<DPParams>(tr("Douglas Peucker Params"));
     });
-
 }
 
-void Widget::initToolWidget()
+template<typename T>
+void Widget::openDialog(const QString& title)
 {
+    QString typeName = QMetaType::fromType<T>().name();
+
+    // 1. 懒加载：如果没创建过，则根据类型创建
+    if (!dialogMap.contains(typeName))
+    {
+        BaseDialog* dialog = nullptr;
+        if (typeName == "opencved::EDParams") dialog = new EDParamDialog(this);
+        else if (typeName == "DPParams") dialog = new DPParamDialog(this);
+
+        if (dialog)
+        {
+            dialog->setWindowTitle(title);
+            dialogMap[typeName] = dialog;
+            // 连接通路 1
+            connect(dialog, &BaseDialog::dataSubmitted, this, &Widget::handleDialogData);
+        }
+    }
+
+    // 2. 从 Controller 获取当前最新数据并存入 Dialog
+    BaseDialog* dialog = dialogMap[typeName];
+    if (typeName == "opencved::EDParams")
+        dialog->setData(QVariant::fromValue(imageController->getEDParams()));
+    else if (typeName == "DPParams")
+        dialog->setData(QVariant::fromValue(imageController->getDPParams()));
+
+    dialog->show();
+    dialog->raise();
+}
+
+void Widget::handleDialogData(const QVariant &data)
+{
+    // 根据 data 存储的实际类型进行分发
+    if (data.canConvert<opencved::EDParams>())
+    {
+        imageController->setEDParams(data.value<opencved::EDParams>());
+    }
+    else if (data.canConvert<DPParams>())
+    {
+        imageController->setDPParams(data.value<DPParams>());
+    }
+}
+
+void Widget::initContentWidget()
+{
+    //判断字符串"源数据"太暴力,判断数字（0, 1, 2）又容易乱
+    //可以给 ComboBox 的每一项绑定一个自定义数据.这样无论文字怎么变,逻辑都不会断
     connect(ui->comboBox, &QComboBox::currentIndexChanged,
             imageController, &ImageController::onImageTypeSelected);
+
     // 如果有其他因为切换源图需要同步的ui组件,可以把“同步 UI 状态”写成一个成员函数, 目前就ui->comboBox需要同步
     connect(imageController, &ImageController::requestUiReset, this, [this](){
         QSignalBlocker blocker(ui->comboBox);
         ui->comboBox->setCurrentIndex(0);
     });
 }
+
 void Widget::initStatusWidget()
 {
     // 连接报错和状态信息
     connect(imageController, &ImageController::errorOccurred, this, &Widget::showErrorMessage);
     connect(imageController, &ImageController::statusMessage, this, &Widget::showStatusMessage);
-
 }
 
 void Widget::showErrorMessage(const QString &msg)
@@ -138,14 +175,12 @@ void Widget::showAboutAuthor()
                         "Program developed by: crazyBeliever_he<br>"
                         "<a href=\"https://github.com/crazyBeliever-He\">Auther GitHub</a>.<br>"
                         "</div>";
-
     QMessageBox msgBox(this);
     msgBox.setWindowTitle("About Auther");
     msgBox.setText(aboutText);
     // 设置消息框的文本格式为 RichText，这样可以支持 HTML 格式
     msgBox.setTextFormat(Qt::RichText);
     msgBox.exec();
-
 }
 
 Widget::~Widget()

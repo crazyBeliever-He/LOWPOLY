@@ -1,13 +1,13 @@
-#include <QCoreApplication>
-#include "EDParams_util.h"
+#include "params_util.h"
 
-bool EDParamsUtil::validateParams(const opencved::EDParams& params, QString& errorMessage)
+#include <QCoreApplication>
+
+bool EDParamsUtil::validateEDParams(const opencved::EDParams& params, QString& errorMessage)
 {
     errorMessage = "";
     bool isValid = true;
 
     // --- 边缘检测相关参数 (5个) ---
-
     // 1. GradientThresholdValue (梯度阈值)
     // 源码逻辑：if (gradThresh < 1) gradThresh = 1;
     if (params.GradientThresholdValue < 1) {
@@ -18,7 +18,6 @@ bool EDParamsUtil::validateParams(const opencved::EDParams& params, QString& err
         errorMessage += QCoreApplication::translate("EDParamsUtil",
                                                     "Warning: Gradient Threshold value recommend 1 ~ 255.\n");
     }
-
     // 2. AnchorThresholdValue (锚点阈值)
     // 源码逻辑：if (anchorThresh < 0) anchorThresh = 0;
     if (params.AnchorThresholdValue < 0) {
@@ -29,7 +28,6 @@ bool EDParamsUtil::validateParams(const opencved::EDParams& params, QString& err
         errorMessage += QCoreApplication::translate("EDParamsUtil",
                                                     "Warning: Anchor Threshold Value > 255 may result in very few anchors.\n");
     }
-
     // 3. ScanInterval (扫描间隔)
     // 源码逻辑：用于循环步长，若为0会导致死循环或崩溃
     if (params.ScanInterval <= 0) {
@@ -40,7 +38,6 @@ bool EDParamsUtil::validateParams(const opencved::EDParams& params, QString& err
         errorMessage += QCoreApplication::translate("EDParamsUtil",
                                                     "Warning: Scan Interval > 10 may result in very sparse edges.\n");
     }
-
     // 4. MinPathLength (最小路径长度)
     // 源码逻辑：if (params.MinPathLength < 3) params.MinPathLength = 3;
     if (params.MinPathLength < 1) {
@@ -68,7 +65,6 @@ bool EDParamsUtil::validateParams(const opencved::EDParams& params, QString& err
     }
 
     // --- 几何检测相关参数 (4个) ---
-
     // 6. MinLineLength (最小直线长度)
     // 源码逻辑：-1为自动计算，若 > 0 则强制至少为 9
     if (params.MinLineLength < -1 || params.MinLineLength == 0) {
@@ -79,7 +75,6 @@ bool EDParamsUtil::validateParams(const opencved::EDParams& params, QString& err
         errorMessage += QCoreApplication::translate("EDParamsUtil",
                                                     "Warning: Min Line Length < 9 will be forced to 9 by algorithm.\n");
     }
-
     // 7. MaxDistanceBetweenTwoLines (线段合并最大距离)
     if (params.MaxDistanceBetweenTwoLines < 0) {
         errorMessage += QCoreApplication::translate("EDParamsUtil",
@@ -89,7 +84,6 @@ bool EDParamsUtil::validateParams(const opencved::EDParams& params, QString& err
         errorMessage += QCoreApplication::translate("EDParamsUtil",
                                                     "Warning: Max Distance > 20.0 may incorrectly merge separate lines.\n");
     }
-
     // 8. LineFitErrorThreshold (直线拟合误差)
     if (params.LineFitErrorThreshold < 0) {
         errorMessage += QCoreApplication::translate("EDParamsUtil",
@@ -99,7 +93,6 @@ bool EDParamsUtil::validateParams(const opencved::EDParams& params, QString& err
         errorMessage += QCoreApplication::translate("EDParamsUtil",
                                                     "Warning: Line Fit Error > 10.0 may cause inaccurate line detection.\n");
     }
-
     // 9. MaxErrorThreshold (圆/椭圆拟合误差)
     if (params.MaxErrorThreshold < 0) {
         errorMessage += QCoreApplication::translate("EDParamsUtil",
@@ -109,6 +102,122 @@ bool EDParamsUtil::validateParams(const opencved::EDParams& params, QString& err
         errorMessage += QCoreApplication::translate("EDParamsUtil",
                                                     "Warning: Max Error > 10.0 may result in poor ellipse fitting.\n");
     }
-
     return isValid;
+}
+
+void EDParamsUtil::setEDParams(opencved::EDParams &params,
+                        bool PFmode,
+                        int EdgeDetectionOperator,
+                        int GradientThresholdValue,
+                        int AnchorThresholdValue,
+                        int ScanInterval,
+                        int MinPathLength,
+                        float Sigma,
+                        bool SumFlag,
+                        bool NFAValidation,
+                        int MinLineLength,
+                        double MaxDistanceBetweenTwoLines,
+                        double LineFitErrorThreshold,
+                        double MaxErrorThreshold) {
+    params.PFmode = PFmode;
+    params.EdgeDetectionOperator = EdgeDetectionOperator;
+    params.GradientThresholdValue = GradientThresholdValue;
+    params.AnchorThresholdValue = AnchorThresholdValue;
+    params.ScanInterval = ScanInterval;
+    params.MinPathLength = MinPathLength;
+    params.Sigma = Sigma;
+    params.SumFlag = SumFlag;
+    params.NFAValidation = NFAValidation;
+    params.MinLineLength = MinLineLength;
+    params.MaxDistanceBetweenTwoLines = MaxDistanceBetweenTwoLines;
+    params.LineFitErrorThreshold = LineFitErrorThreshold;
+    params.MaxErrorThreshold = MaxErrorThreshold;
+}
+
+bool EDParamsUtil::compareEDParams(const opencved::EDParams &params1, const opencved::EDParams &params2)
+{
+    return params1.PFmode == params2.PFmode &&
+           params1.EdgeDetectionOperator == params2.EdgeDetectionOperator &&
+           params1.GradientThresholdValue == params2.GradientThresholdValue &&
+           params1.AnchorThresholdValue == params2.AnchorThresholdValue &&
+           params1.ScanInterval == params2.ScanInterval &&
+           params1.MinPathLength == params2.MinPathLength &&
+           params1.Sigma == params2.Sigma &&
+           params1.SumFlag == params2.SumFlag &&
+           params1.NFAValidation == params2.NFAValidation &&
+           params1.MinLineLength == params2.MinLineLength &&
+           params1.MaxDistanceBetweenTwoLines == params2.MaxDistanceBetweenTwoLines &&
+           params1.LineFitErrorThreshold == params2.LineFitErrorThreshold &&
+           params1.MaxErrorThreshold == params2.MaxErrorThreshold;
+}
+
+void EDParamsUtil::getDefaultEDParams(opencved::EDParams &p)
+{
+    p.PFmode = false;
+    p.EdgeDetectionOperator = 1;
+    p.GradientThresholdValue = 20;
+    p.AnchorThresholdValue = 0;
+    p.ScanInterval = 1;
+    p.MinPathLength = 10;
+    p.Sigma = 1.0f;
+    p.SumFlag = true;
+    p.NFAValidation = true;
+    p.MinLineLength = 10;
+    p.MaxDistanceBetweenTwoLines = 6.0;
+    p.LineFitErrorThreshold = 1.0;
+    p.MaxErrorThreshold = 1.3;
+}
+
+bool DPParamsUtil::validateDPParams(const DPParams &params, QString &errorMessage)
+{
+    errorMessage = "";
+    bool isValid = true;
+    // 1. Epsilon (容差阈值)
+    // 决定点到直线的距离超过多少时保留该点. 像素坐标系下通常 > 0. 推荐值范围：0.1 ~ 10.0 过小则没简化.过大则丢失形状.
+    if (params.epsilon < 0.0) {
+        errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                    "Error: Epsilon (tolerance) cannot be negative.\n");
+        isValid = false;
+    } else if (params.epsilon < 0.1) {
+        errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                    "Warning: Epsilon is very small; simplification might be ineffective.\n");
+    } else if (params.epsilon > 20.0) {
+        errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                    "Warning: Epsilon is very large; edge features may be severely distorted.\n");
+    }
+
+    // 2. Eta (长度比例系数)
+    // 论文逻辑: Li = eta * (W + H), 论文推荐值为 0.02. eta 过大, 长边不会被打断, Low Poly 感减弱; 如果过小, 点会过于密集.
+    if (params.eta <= 0.0) {
+        errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                    "Error: Eta (length factor) must be greater than 0.\n");
+        isValid = false;
+    } else if (params.eta > 0.5) {
+        // 如果 eta > 0.5, 意味着采样间隔超过了图像尺寸的一半，显然不合理
+        errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                    "Error: Eta is too large; maximum segment length exceeds image proportions.\n");
+        isValid = false;
+    } else if (params.eta < 0.005) {
+        errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                    "Warning: Eta is very small; may generate excessive constrained points.\n");
+    }
+    return isValid;
+}
+
+void DPParamsUtil::setDPParams(DPParams &params, double epsilon, double eta)
+{
+    params.epsilon = epsilon;
+    params.eta = eta;
+}
+
+bool DPParamsUtil::compareDPParams(const DPParams &params1, const DPParams &params2)
+{
+    return params1.epsilon == params2.epsilon &&
+           params1.eta == params2.eta;
+}
+
+void DPParamsUtil::getDefaultDPParams(DPParams &p)
+{
+    p.epsilon = 1.5;
+    p.eta = 0.02;
 }

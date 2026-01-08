@@ -1,8 +1,10 @@
 #include "widget.h"
+
 #include <QApplication>
 #include <QTranslator>
-#include "logger.h"
 #include <QMessageBox>
+
+#include "logger.h"
 
 int main(int argc, char *argv[])
 {

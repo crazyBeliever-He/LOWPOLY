@@ -1,11 +1,14 @@
-#include "edge_drawing_gray.h"
+#include "edge_drawing.h"
+
 #include <QtMath>
 #include <stack>
+#include <QPainter>
 
-float GrayEdgeDrawing::lut[LUT_SIZE] = {0};
-bool GrayEdgeDrawing::lutInitialized = false;
 
-GrayEdgeDrawing::GrayEdgeDrawing()
+float EdgeDrawing::lut[LUT_SIZE] = {0};
+bool EdgeDrawing::lutInitialized = false;
+
+EdgeDrawing::EdgeDrawing()
 {
     if (!lutInitialized) {
         initializeLUT();
@@ -17,8 +20,7 @@ GrayEdgeDrawing::GrayEdgeDrawing()
     shortEdgeLength = 2;
 }
 
-
-QImage GrayEdgeDrawing::getEDImageGray16(const QImage &origin)
+QImage EdgeDrawing::getEDImageGray16(const QImage &origin)
 {
     if (origin.isNull()) return QImage();
     // 1. 转为浮点灰度空间
@@ -34,7 +36,7 @@ QImage GrayEdgeDrawing::getEDImageGray16(const QImage &origin)
     // 6. 绘图输出
     return drawEdgeChains(origin.width(), origin.height(), chains);
 }
-QImage GrayEdgeDrawing::getEDImageFloat(const QImage &origin)
+QImage EdgeDrawing::getEDImageFloat(const QImage &origin)
 {
     if (origin.isNull()) return QImage();
     // 1. 转为浮点灰度空间
@@ -52,7 +54,7 @@ QImage GrayEdgeDrawing::getEDImageFloat(const QImage &origin)
 }
 
 /* 初始化sRGB到线性RGB的查找表(LUT) */
-void GrayEdgeDrawing::initializeLUT()
+void EdgeDrawing::initializeLUT()
 {   //预先计算并存储256个sRGB值到线性RGB值的转换结果，用于加速图像处理中的色彩空间转换。
     //sRGB色彩空间使用非线性编码(伽马≈2.2),而图像处理算法需要在线性色彩空间中进行计算。
     for (int i = 0; i < 256; ++i)
@@ -64,7 +66,7 @@ void GrayEdgeDrawing::initializeLUT()
 }
 
 /* 默认用 BT601 */
-inline float GrayEdgeDrawing::getGrayValue(float r, float g, float b, GrayMethod method)
+inline float EdgeDrawing::getGrayValue(float r, float g, float b, GrayMethod method)
 {
     switch (method)
     {
@@ -78,18 +80,18 @@ inline float GrayEdgeDrawing::getGrayValue(float r, float g, float b, GrayMethod
 }
 
 /* 伽马校正LUT 或 归一化normaization */
-inline float GrayEdgeDrawing::getLinearValue(uchar value)
+inline float EdgeDrawing::getLinearValue(uchar value)
 {   // 如果使用 LUT,返回查表值. 否则直接线性归一化到 [0, 1]
     return useLut ? lut[value] : (value / 255.0f);
 }
 
 /* 将 0-255 的标准梯度阈值转换为适应数据流的梯度阈值 */
-inline float GrayEdgeDrawing::calculateInternalThreshold(int stdThreshold, DataMode mode)
+inline float EdgeDrawing::calculateInternalThreshold(int stdThreshold, DataMode mode)
 {
     return (mode == MODE_FLOAT) ? (stdThreshold / 255.0f) : (stdThreshold * 257.0f);
 }
 
-QImage GrayEdgeDrawing::convertColorToGrayscale16(const QImage &image)
+QImage EdgeDrawing::convertColorToGrayscale16(const QImage &image)
 {
     if (image.isNull() || image.format() == QImage::Format_Grayscale16)
         return image;
@@ -131,7 +133,7 @@ QImage GrayEdgeDrawing::convertColorToGrayscale16(const QImage &image)
     return grayImage;
 }
 
-FloatImage GrayEdgeDrawing::convertColorToGrayFloat(const QImage &input)
+FloatImage EdgeDrawing::convertColorToGrayFloat(const QImage &input)
 {
     if (input.isNull()) return {0, 0, {}};
 
@@ -188,7 +190,7 @@ FloatImage GrayEdgeDrawing::convertColorToGrayFloat(const QImage &input)
 }
 
 /* defalut kernel size is 5, sigma = 1.0f, use BORDER_REFLECT_101(镜像边界) */
-QImage GrayEdgeDrawing::gaussianBlurGrayscale16(const QImage &image, int kSize, float sigma)
+QImage EdgeDrawing::gaussianBlurGrayscale16(const QImage &image, int kSize, float sigma)
 {
     if(kSize <= 1 || sigma <= 0.0f) return image;
     if (image.isNull() || image.format() != QImage::Format_Grayscale16)
@@ -262,7 +264,7 @@ QImage GrayEdgeDrawing::gaussianBlurGrayscale16(const QImage &image, int kSize, 
 }
 
 /* defalut kernel size is 5, sigma = 1.0f, use BORDER_REFLECT_101(镜像边界) */
-FloatImage GrayEdgeDrawing::gaussianBlurFloat(const FloatImage &input, int kSize, float sigma)
+FloatImage EdgeDrawing::gaussianBlurFloat(const FloatImage &input, int kSize, float sigma)
 {
     if (input.data.empty() || kSize <= 1 || sigma <= 0.0f)
         return input;
@@ -331,7 +333,7 @@ FloatImage GrayEdgeDrawing::gaussianBlurFloat(const FloatImage &input, int kSize
     return output;
 }
 /* 梯度计算 Prewitt operator */
-GradientInfo GrayEdgeDrawing::computeGradientGrayscale16(const QImage &image)
+GradientInfo EdgeDrawing::computeGradientGrayscale16(const QImage &image)
 {
     int w = image.width();
     int h = image.height();
@@ -376,7 +378,7 @@ GradientInfo GrayEdgeDrawing::computeGradientGrayscale16(const QImage &image)
 }
 
 /* 梯度计算 Prewitt operator */
-GradientInfo GrayEdgeDrawing::computeGradientFloat(const FloatImage &input)
+GradientInfo EdgeDrawing::computeGradientFloat(const FloatImage &input)
 {
     int w = input.width;
     int h = input.height;
@@ -410,7 +412,7 @@ GradientInfo GrayEdgeDrawing::computeGradientFloat(const FloatImage &input)
 }
 
 /* get anchors */
-std::vector<QPoint> GrayEdgeDrawing::extractAnchors()
+std::vector<QPoint> EdgeDrawing::extractAnchors()
 {
     std::vector<QPoint> anchors;
     int w = gradient.width;
@@ -445,7 +447,7 @@ std::vector<QPoint> GrayEdgeDrawing::extractAnchors()
 }
 
 /* smart route */
-std::vector<EdgeChain> GrayEdgeDrawing::graySmartRouting(const std::vector<QPoint> &anchors)
+std::vector<EdgeChain> EdgeDrawing::graySmartRouting(const std::vector<QPoint> &anchors)
 {
     int w = gradient.width;
     int h = gradient.height;
@@ -467,7 +469,7 @@ std::vector<EdgeChain> GrayEdgeDrawing::graySmartRouting(const std::vector<QPoin
 }
 
 /* route */
-void GrayEdgeDrawing::route(EdgeChain &chain, int x, int y)
+void EdgeDrawing::route(EdgeChain &chain, int x, int y)
 {   //目前路由的缺点: 生成的边缘图像物理的边缘有 1 像素的空隙. 卷积算子Prewitt也有边缘缩进情况.
     int w = gradient.width;
     int h = gradient.height;
@@ -543,7 +545,7 @@ void GrayEdgeDrawing::route(EdgeChain &chain, int x, int y)
     }
 }
 
-void GrayEdgeDrawing::routeStack(EdgeChain &chain, int startX, int startY)
+void EdgeDrawing::routeStack(EdgeChain &chain, int startX, int startY)
 {
     int w = gradient.width;
     int h = gradient.height;
@@ -592,7 +594,7 @@ void GrayEdgeDrawing::routeStack(EdgeChain &chain, int startX, int startY)
     }
 }
 
-QPoint GrayEdgeDrawing::findBestNeighbor(int targetX, int targetY, bool isVerticalScan)
+QPoint EdgeDrawing::findBestNeighbor(int targetX, int targetY, bool isVerticalScan)
 {
     int w = gradient.width;
     float maxG = -1.0f;
@@ -621,7 +623,7 @@ QPoint GrayEdgeDrawing::findBestNeighbor(int targetX, int targetY, bool isVertic
 }
 
 
-QImage GrayEdgeDrawing::drawEdgeChains(int width, int height, const std::vector<EdgeChain> &chains)
+QImage EdgeDrawing::drawEdgeChains(int width, int height, const std::vector<EdgeChain> &chains)
 {
     // 创建一个纯黑底色的 8 位图像
     QImage result(width, height, QImage::Format_RGB32);
@@ -642,4 +644,86 @@ QImage GrayEdgeDrawing::drawEdgeChains(int width, int height, const std::vector<
         }
     }
     return result;
+}
+
+void EdgeDrawing::edgeDrawingInLib(const QImage &originalImage)
+{
+    QImage workImage;
+    int channels = 0;
+    // Edge Drawing 支持 CV_8UC1 CV_8UC3 CV_8UC4
+    switch (originalImage.format())
+    {
+    case QImage::Format_Grayscale8:
+    case QImage::Format_Indexed8:
+        workImage = originalImage;
+        channels = 1;
+        break;
+
+    case QImage::Format_ARGB32:
+    case QImage::Format_ARGB32_Premultiplied:
+    case QImage::Format_RGBA8888:
+        // 若有透明通道, 转为 BGRA (对应 CV_8UC4). Qt 无 BGRA8888 格式.
+        {   // 统一将透明背景下的颜色设为白色, 为了消除伪影. 目标像素（Dst'） = (1 - Alpha) * Dst + Alpha * Src
+            // QImage::Format_ARGB32 和 QImage::Format_RGBA8888 在存储上有很大的区别的(含大小端问题), 注意区分.
+            // 利用 RGBA8888 字节流格式 + rgbSwapped 得到固定的 BGRA
+            workImage = QImage(originalImage.size(), QImage::Format_RGBA8888);
+            workImage.fill(Qt::white);
+            QPainter painter(&workImage);
+            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            painter.drawImage(0, 0, originalImage);
+            painter.end();
+
+            workImage = workImage.rgbSwapped(); // [Byte0:B, Byte1:G, Byte2:R, Byte3:A]
+            channels = 4;
+        }
+        break;
+
+    default:
+        // 其余一律转为 BGR (对应 CV_8UC3). Format_BGR888 是字节流格式, 在内存中按 B, G, R 顺序排列.
+        workImage = originalImage.convertToFormat(QImage::Format_BGR888);
+        channels = 3;
+        break;
+    }
+
+    edResults.reset(RunEdgeDrawingFull(workImage.bits(), workImage.width(),
+                                       workImage.height(), workImage.bytesPerLine(),
+                                       channels, edParams));
+}
+
+QImage EdgeDrawing::drawImage(int width, int height)
+{
+    QImage edgeMap(width, height, QImage::Format_RGB888);
+    edgeMap.fill(Qt::black);
+
+    // 预先获取所有行的首地址
+    QVector<uchar*> linePtrs(height);
+    for (int y = 0; y < height; ++y)
+    {
+        linePtrs[y] = edgeMap.scanLine(y);
+    }
+
+    for (int i = 0; i < edResults.data.segmentCount; ++i)
+    {
+        opencved::EDEdgeSegment& seg = edResults.data.segments[i];
+        // 动态计算颜色: 根据索引 i 平分 360 度色相环，保证相邻边缘颜色差异最大
+        int hue = (i * 137) % 360; // 137 是黄金角度偏移，能让颜色分布更均匀(完全剩余系)
+        QColor segmentColor = QColor::fromHsv(hue, 255, 255);
+
+        for (int j = 0; j < seg.count; ++j)
+        {
+            opencved::EDPoint& pt = seg.points[j];
+            // 确保坐标不越界
+            if (pt.x >= 0 && pt.x < edgeMap.width() && pt.y >= 0 && pt.y < edgeMap.height())
+            {
+                uchar* pixel = linePtrs[pt.y] + (pt.x * 3);
+                pixel[0] = segmentColor.red();
+                pixel[1] = segmentColor.green();
+                pixel[2] = segmentColor.blue();
+                // pixel[0] = 255;
+                // pixel[1] = 255;
+                // pixel[2] = 255;
+            }
+        }
+    }
+    return edgeMap;
 }

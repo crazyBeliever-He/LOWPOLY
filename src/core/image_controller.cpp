@@ -1,7 +1,9 @@
 #include "image_controller.h"
+
 #include <QFileDialog>
+#include <QPainter>
 #include "logger.h"
-#include "EDParams_util.h"
+#include "params_util.h"
 
 ImageController::ImageController(ImageModel *model,
                                  ImageWidget *view,
@@ -10,19 +12,101 @@ ImageController::ImageController(ImageModel *model,
     imageModel(model),
     imageWidget(view)
 {
-    //grayEdgeDrawing = new GrayEdgeDrawing();
-    // 初始化自己持有的 edge drawing 函数的参数
-    std::memset(&edParams, 0, sizeof(edParams));
-    setEdParams();
+    // 1. edge drawing 参数初始化
+    edgeDrawing = new EdgeDrawing();
+    EDParamsUtil::getDefaultEDParams(edgeDrawing->edParams);
+
+    // 2. douglas peucker 参数初始化
+    douglasPeucker = new DouglasPeucker();
+    DPParamsUtil::getDefaultDPParams(douglasPeucker->dpParams);
+
+    // n. 实现connect
     // 切换源图
     connect(imageModel, &ImageModel::originImageChanged,
             this, &ImageController::applyAllImageProcess);
-
-    // connect(this, &ImageController::displayTypeRequested,
-    //         imageModel, &ImageModel::setDisplayType);
-    // ImageModel 和 ImageWidget 解耦
+    // ImageModel 和 ImageWidget 解耦, 切换源图和其他图片分别执行不同的绘制操作
+    connect(imageModel, &ImageModel::originImageChanged,
+            imageWidget, &ImageWidget::setOriginImage);
     connect(imageModel, &ImageModel::displayTypeUpdated,
             imageWidget, &ImageWidget::setImage);
+}
+
+void ImageController::applyAllImageProcess()
+{
+    // emit requestUiReset();
+    // 阶段 1: Edge Drawing. 如果当前 ED 没做,则执行它
+    if (currentStage < ProcessStage::EdgeDrawingDone)
+    {
+        applyEdgeDrawing();
+        currentStage = ProcessStage::EdgeDrawingDone;
+    }
+    // 阶段 2: Douglas Peucker. 如果当前没做 DP,或者 ED 重做导致 DP 失效
+    if (currentStage < ProcessStage::DouglasPeuckerDone)
+    {
+        applyDouglasPeucker();
+        currentStage = ProcessStage::DouglasPeuckerDone;
+    }
+}
+
+void ImageController::applyEdgeDrawing()
+{
+    QImage originImage = imageModel->getImage(ImageModel::TYPE_ORIGIN);
+    edgeDrawing->edgeDrawingInLib(originImage);
+    QImage edgeMap = edgeDrawing->drawImage(originImage.width(), originImage.height());
+    imageModel->setImageData(ImageModel::TYPE_EDGEDRAWING, edgeMap);
+
+    // int totalPoints = 0;
+    // for(int i = 0; i < edgeDrawing->edResults.data.segmentCount; i++)
+    // {
+    //     totalPoints +=  edgeDrawing->edResults.data.segments[i].count;
+    // }
+    // qDebug() << QString("points after edge drawing : %1").arg(totalPoints);
+}
+
+void ImageController::applyDouglasPeucker()
+{
+    QImage originImage = imageModel->getImage(ImageModel::TYPE_ORIGIN);
+    int w = originImage.width();
+    int h = originImage.height();
+    douglasPeucker->simplify(edgeDrawing->edResults, w, h);
+    QImage pointMap = douglasPeucker->drawPointImage(w, h);
+    imageModel->setImageData(ImageModel::TYPE_DOUGLASPOINT, pointMap);
+    QImage lineMap = douglasPeucker->drawLineImage(w, h);
+    imageModel->setImageData(ImageModel::TYPE_DOUGLASLINE, lineMap);
+
+    // int totalPoints = 0;
+    // for(std::vector<QPoint>& i : douglasPeucker->dpResults)
+    // {
+    //     totalPoints += static_cast<int>(i.size());
+    // }
+    // qDebug() << QString("points after douglas peucker : %1").arg(totalPoints);
+}
+
+void ImageController::setEDParams(const opencved::EDParams& newParams)
+{
+    if (!EDParamsUtil::compareEDParams(edgeDrawing->edParams, newParams))
+    {
+        edgeDrawing->edParams = newParams;
+        // ED 参数变了，当前进度重置为 None
+        currentStage = ProcessStage::None;
+        applyAllImageProcess();
+    }
+}
+
+void ImageController::setDPParams(const DPParams& newParams)
+{
+    if(newParams.epsilon != douglasPeucker->dpParams.epsilon ||
+        newParams.eta != douglasPeucker->dpParams.eta)
+    {
+        douglasPeucker->dpParams.epsilon = newParams.epsilon;
+        douglasPeucker->dpParams.eta = newParams.eta;
+        // 如果 DP 参数变了，进度最多只能维持在 EdgeDrawing 完成状态
+        if (currentStage > ProcessStage::EdgeDrawingDone)
+        {
+            currentStage = ProcessStage::EdgeDrawingDone;
+            applyAllImageProcess();
+        }
+    }
 }
 
 void ImageController::openImageWithDialog(QWidget *parent)
@@ -37,7 +121,8 @@ void ImageController::openImageWithDialog(QWidget *parent)
         return;
     }
     //emit statusMessage(tr("Loading..."));
-    if (imageModel->loadFromFile(path)) {
+    if (imageModel->loadFromFile(path))
+    {
         emit statusMessage(tr("Image loaded"));
         LOG_INFO << "Load: " << path;
         return;
@@ -80,103 +165,6 @@ void ImageController::onImageTypeSelected(int intType)
         imageModel->setDisplayType(imageType);
     }
 }
-
-void ImageController::applyAllImageProcess()
-{
-    emit requestUiReset();
-    edgeDrawing();
-}
-
-void ImageController::setEdParams(bool PFmode,
-                                  int EdgeDetectionOperator,
-                                  int GradientThresholdValue,
-                                  int AnchorThresholdValue,
-                                  int ScanInterval,
-                                  int MinPathLength,
-                                  float Sigma,
-                                  bool SumFlag,
-                                  bool NFAValidation,
-                                  int MinLineLength,
-                                  double MaxDistanceBetweenTwoLines,
-                                  double LineFitErrorThreshold,
-                                  double MaxErrorThreshold)
-{
-    opencved::EDParams newParams;
-    EDParamsUtil::setEDParams(newParams,
-                              PFmode, EdgeDetectionOperator, GradientThresholdValue,
-                              AnchorThresholdValue, ScanInterval, MinPathLength,
-                              Sigma, SumFlag,
-                              NFAValidation,
-                              MinLineLength, MaxDistanceBetweenTwoLines,
-                              LineFitErrorThreshold, MaxErrorThreshold);
-    // 如果参数修改就重新处理
-    if (!EDParamsUtil::compareEDParams(this->edParams, newParams))
-    {
-        this->edParams = newParams;
-        applyAllImageProcess();
-    }
-}
-
-void ImageController::setEDParams(const opencved::EDParams& newParams)
-{
-    if (!EDParamsUtil::compareEDParams(this->edParams, newParams))
-    {
-        this->edParams = newParams;
-        applyAllImageProcess();
-    }
-}
-
-void ImageController::edgeDrawing()
-{
-    // 1. 准备图像格式, Edge Drawing 支持灰度图(CV_8UC1)或彩色图 (CV_8UC3)
-    QImage originalImage = imageModel->getImage(ImageModel::TYPE_ORIGIN);
-    QImage workImage;
-    if (originalImage.format() == QImage::Format_Grayscale8) {
-        workImage = originalImage.copy(); // 已经是灰度 8bit, 直接用
-    }else{
-        // OpenCV 默认彩色处理通常基于BGR. 或用函数QImage::rgbSwapped();
-        workImage = originalImage.convertToFormat(QImage::Format_BGR888);
-    }
-    // 2. 调用 DLL 函数获取边缘链
-    opencved::EDResults results = RunEdgeDrawingFull(
-        workImage.bits(),
-        workImage.width(),
-        workImage.height(),
-        workImage.bytesPerLine(),
-        (workImage.format() != QImage::Format_Grayscale8), // isColor = true
-        edParams
-        );
-    // 3. 将结果绘制到一张新图中
-    QImage edgeMap(workImage.width(), workImage.height(), QImage::Format_RGB888);
-    edgeMap.fill(Qt::black);
-    // 遍历所有边缘段并画点
-    for (int i = 0; i < results.segmentCount; ++i)
-    {
-        opencved::EDEdgeSegment& seg = results.segments[i];
-        // 动态计算颜色: 根据索引 i 平分 360 度色相环，保证相邻边缘颜色差异最大
-        int hue = (i * 137) % 360; // 137 是黄金角度偏移，能让颜色分布更均匀(完全剩余系)
-        QColor segmentColor = QColor::fromHsv(hue, 255, 255);
-        for (int j = 0; j < seg.count; ++j)
-        {
-            opencved::EDPoint& pt = seg.points[j];
-            // 确保坐标不越界
-            if (pt.x >= 0 && pt.x < edgeMap.width() && pt.y >= 0 && pt.y < edgeMap.height())
-            {
-                uchar* line = edgeMap.scanLine(pt.y);
-                uchar* pixel = line + (pt.x * 3);
-                pixel[0] = segmentColor.red();
-                pixel[1] = segmentColor.green();
-                pixel[2] = segmentColor.blue();
-            }
-        }
-    }
-    // 4. !!! 非常重要：释放 DLL 内部申请的内存 !!!
-    opencved::FreeEDResults(results);
-    // 5. 更新模型
-    imageModel->setImage(ImageModel::TYPE_OUTLINE, edgeMap);
-    emit statusMessage(tr("Edge Drawing segments detected: %1").arg(results.segmentCount));
-}
-
 
 ImageController::~ImageController()
 {

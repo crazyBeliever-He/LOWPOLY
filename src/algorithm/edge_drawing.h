@@ -1,11 +1,13 @@
-#ifndef EDGE_DRAWING_GRAY_H
-#define EDGE_DRAWING_GRAY_H
+#ifndef EDGE_DRAWING_H
+#define EDGE_DRAWING_H
 
 #include <vector>
 #include <QImage>
+#include "algorithm_params.h"
 
 // opencv实现了edge drawing算法
 // 输入图片->灰度图->高斯滤波(a 5 5 Gaussian kernel with r = 1 is used)
+// TODO: 修改自实现的edge drawing gray 算法, 改成gray和color两个版本都能用
 struct FloatImage {
     int width;
     int height;
@@ -24,14 +26,22 @@ struct EdgeChain {
     std::vector<QPoint> points;
 };
 
-class GrayEdgeDrawing
+class EdgeDrawing
 {
+//opencv-contrib edge drawing
+public:
+    opencved::EDParams edParams;
+    ScopedEDResults edResults;
+    void edgeDrawingInLib(const QImage &originalImage);
+    QImage drawImage(int width, int height);
+
+//my edge drawing
 public:
     enum GrayMethod { METHOD_BT601 = 0, METHOD_BT709, NUM_METHODS };
     enum DataMode { MODE_FLOAT = 0, MODE_GRAY16 };
     enum EdgeDirection { EDGE_HORIZONTAL = 0, EDGE_VERTICAL = 1 };
 
-    GrayEdgeDrawing();
+    EdgeDrawing();
     QImage getEDImageGray16(const QImage &origin);
     QImage getEDImageFloat(const QImage &origin);
 
@@ -88,11 +98,8 @@ private:
     static float lut[LUT_SIZE];
     static bool lutInitialized;
     static void initializeLUT();
-
     // static constexpr 成员可以直接在类定义中初始化
     // static 非 constexpr 成员必须在类外进行初始化(即使它们是数组或普通变量)
-    // reinterpret_cast可能存在潜在风险
-
 };
 
-#endif // EDGE_DRAWING_GRAY_H
+#endif // EDGE_DRAWING_H

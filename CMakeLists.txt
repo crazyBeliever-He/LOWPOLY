@@ -29,11 +29,6 @@ set(PROJECT_SOURCES
     ${SRC_DIR}/core/image_widget.h
     ${SRC_DIR}/core/image_widget.cpp
 
-    ${SRC_DIR}/algorithm/edge_drawing_gray.h
-    ${SRC_DIR}/algorithm/edge_drawing_gray.cpp
-    ${SRC_DIR}/algorithm/edge_drawing_color.h
-    ${SRC_DIR}/algorithm/edge_drawing_color.cpp
-
     ${SRC_DIR}/utils/logger.h
     ${SRC_DIR}/utils/logger.cpp
 
@@ -45,14 +40,20 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         src/ui/base_dialog.h
-        src/ui/ed_param_dialog.h
-        src/ui/ed_param_dialog.cpp
-        src/ui/ed_param_dialog.ui
-        src/utils/EDParams_util.h
-        src/utils/EDParams_util.cpp
-
-
-
+        src/ui/edge_drawing_dialog.h
+        src/ui/edge_drawing_dialog.cpp
+        src/ui/edge_drawing_dialog.ui
+        src/utils/params_util.h
+        src/utils/params_util.cpp
+        exlib/edge_drawing_lib.h
+        src/algorithm/douglas_peucker.h
+        src/algorithm/douglas_peucker.cpp
+        src/ui/douglas_peucker_dialog.h
+        src/ui/douglas_peucker_dialog.cpp
+        src/ui/douglas_peucker_dialog.ui
+        src/algorithm/algorithm_params.h
+        src/algorithm/edge_drawing.h
+        src/algorithm/edge_drawing.cpp
 
 
     )

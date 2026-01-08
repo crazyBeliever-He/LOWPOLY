@@ -16,12 +16,12 @@ public:
 
     /*设置并显示图像*/
     void setImage(const QImage &img);
+    void setOriginImage(const QImage &img);
 
 public:
     /* 是否自适应窗口大小 */
     bool autoSize;
-
-
+    bool editFunc;
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -30,7 +30,7 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
 private:
-    /*计算自适应缩放, 只在初次展示某图片时调用*/
+    /* 根据窗口大小计算自适应缩放 */
     void adjustToWindowSize();
     void updateCachedPixmap();
     QPointF widgetToImage(const QPointF &p) const;

@@ -14,11 +14,9 @@ class ImageModel : public QObject
 public:
     enum ImageType {
         TYPE_ORIGIN = 0,    // 原始图像
-        TYPE_GRAY,          //
-        TYPE_BLUR,          //
-        TYPE_OUTLINE,       //
-        TYPE_CUSTOM1,       //
-        TYPE_CUSTOM2,       //
+        TYPE_EDGEDRAWING,
+        TYPE_DOUGLASPOINT,
+        TYPE_DOUGLASLINE,
         NUM_TYPES           // 存储的图像数量
     };
 
@@ -37,8 +35,8 @@ public:
     const QImage &getcurrentImage() const{ return imageVector[displayType];}
     /*获取当前展示的类型*/
     //ImageType getCurrentImageType() const{return displayType;}
-    /*设置指定类型的图像(用于保存处理后的图像)*/
-    void setImage(ImageType type, const QImage &img);
+    /* 保存处理后的图像 */
+    void setImageData(ImageType type, const QImage &img);
 
 public slots:
     /*切换当前展示图像类型*/
@@ -46,7 +44,7 @@ public slots:
 
 signals:
     /*切换源图像*/
-    void originImageChanged(ImageType type, const QImage &newImage);
+    void originImageChanged(const QImage &newImage);
     /*当前显示图像变化*/
     void displayTypeUpdated(const QImage &newImage);
     /*切换打开文件的路径*/

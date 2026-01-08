@@ -37,11 +37,13 @@ namespace opencved
             int segmentCount;           // 检测到的边缘段总数
         };
 
+        #pragma pack(push, 8)
         /**
          * @brief ColorED 算法参数配置结构体
          * 包含从底层梯度计算到高层几何拟合的所有控制变量
+         * 为了清晰每个参数的作用以及在算法应用中的连贯性, 此结构体强制 8 字节对齐.
          */
-        struct EDParams {
+        struct EDParams {   
             // --- 核心边缘检测 (Edge Drawing) 参数 ---
 
             //! Parameter Free mode will be activated when this value is set as true. Default value is false.
@@ -91,7 +93,7 @@ namespace opencved
             bool NFAValidation;
 
             //! minimun line length to detect. Default value is -1
-            // 最小直线长度：检测到的直线段若短于此值则舍弃. 若设为 -1, 算法会根据图像尺寸自动计算一个理论最小值.
+            // 最小直线长度: 检测到的直线段若短于此值则舍弃. 若设为 -1, 算法会根据图像尺寸自动计算一个理论最小值.
             int MinLineLength;
 
             //! Default value is 6.0
@@ -106,6 +108,7 @@ namespace opencved
             // 圆/椭圆拟合最大误差阈值：像素点到拟合圆/椭圆边界的最大允许距离.
             double MaxErrorThreshold;
         };
+        #pragma pack(pop)
 
         /**
          * @brief 基础边缘检测(ColorED)
@@ -118,9 +121,10 @@ namespace opencved
          * - false: 单通道灰度图
          * @param p 算法参数
          * * @return EDResults 包含所有检测到的像素链
+         * 断言: CV_Assert(!src.empty() && (src.type() == CV_8UC1 || src.type() == CV_8UC3 || src.type() == CV_8UC4));
          * 注意: 返回的内存是在 DLL 堆上分配的, 必须调用 FreeEDResults 释放, 否则会内存泄漏.
          */
-        ED_API struct EDResults RunEdgeDrawingFull(unsigned char* data, int width, int height, int step, bool isColor, EDParams p);
+        ED_API struct EDResults RunEdgeDrawingFull(unsigned char* data, int width, int height, int step, int channels, EDParams p);
 
         /**
          * @brief 直线段检测 (EDLines)
@@ -128,8 +132,9 @@ namespace opencved
          * @param linesData [输出] 浮点数组, 每4个元素代表一条线 [x1, y1, x2, y2]. 原点(0,0)位于图像左上角.
          * @param maxLines 外部缓冲区允许存储的最大直线数量
          * @return 实际检测到的直线数量
+         * 断言: CV_Assert(!src.empty() && (src.type() == CV_8UC1 || src.type() == CV_8UC3 || src.type() == CV_8UC4));
          */
-        ED_API int RundetectLines(unsigned char* data, int width, int height, int step, bool isColor, EDParams p, float* linesData, int maxLines);
+        ED_API int RundetectLines(unsigned char* data, int width, int height, int step, int channels, EDParams p, float* linesData, int maxLines);
 
         /**
          * @brief 圆和椭圆检测 (EDCircles)
@@ -137,8 +142,9 @@ namespace opencved
          * @param ellipseData [输出] 双精度数组, 每6个元素代表一个椭圆 [cX, cY, a, b, angle, ...]. 原点(0,0)位于图像左上角.
          * @param maxEllipses 外部缓冲区允许存储的最大椭圆数量
          * @return 实际检测到的圆/椭圆数量
+         * 断言: CV_Assert(!src.empty() && (src.type() == CV_8UC1 || src.type() == CV_8UC3 || src.type() == CV_8UC4));
          */
-        ED_API int RundetectEllipses(unsigned char* data, int width, int height, int step, bool isColor, EDParams p, double* ellipseData, int maxEllipses);
+        ED_API int RundetectEllipses(unsigned char* data, int width, int height, int step, int channels, EDParams p, double* ellipseData, int maxEllipses);
 
         /**
          * @brief 内存释放辅助函数

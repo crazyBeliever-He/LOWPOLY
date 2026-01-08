@@ -1,16 +1,32 @@
 #include "image_widget.h"
-#include "logger.h"
+
 #include <QPainter>
+#include "logger.h"
 
 ImageWidget::ImageWidget(QWidget *parent)
     : QWidget(parent)
 {
     autoSize = true;
+    editFunc = false;
     setMouseTracking(true); // 启用鼠标跟踪（不按下按钮也能接收移动事件）
 }
 
-
 void ImageWidget::setImage(const QImage &img)
+{
+    if(img.isNull())
+    {
+        LOG_ERROR << "The image to be displayed is empty";
+        return;
+    }
+    presentImage = img;
+
+    // 不重置缩放值, 但应该缓存失效, 否则会继续绘制旧图片的缓存
+    cachedScale = -1.0;
+
+    update();
+}
+
+void ImageWidget::setOriginImage(const QImage &img)
 {
     if(img.isNull())
     {
@@ -40,8 +56,9 @@ void ImageWidget::adjustToWindowSize()
     double heightScale = static_cast<double>(newSize.height()) / static_cast<double>(presentImage.height());
     scale = qMin(widthScale, heightScale);
     cachedScale = scale;
-    // 根据窗口大小调整图像缩放
-    cachedPixmap = QPixmap::fromImage(presentImage.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    //Qt::SmoothTransformation会进行双线性过滤,像素边缘会变模糊,产生渐变.
+    //Qt::FastTransformation直接取最近的像素颜色.当放大倍数很大时,看到一个个完美的正方形像素点,边界极其清晰.
+    cachedPixmap = QPixmap::fromImage(presentImage.scaled(newSize, Qt::KeepAspectRatio, Qt::FastTransformation));
 }
 /*将控件坐标映射到原图坐标*/
 QPointF ImageWidget::widgetToImage(const QPointF &wpos) const
@@ -60,7 +77,7 @@ void ImageWidget::updateCachedPixmap()
         presentImage.scaled(
             scaledSize,
             Qt::KeepAspectRatio,
-            Qt::SmoothTransformation)
+            Qt::FastTransformation)
         );
 
     cachedScale = scale;
@@ -69,7 +86,8 @@ void ImageWidget::updateCachedPixmap()
 void ImageWidget::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
-    painter.fillRect(rect(), Qt::white);
+    painter.fillRect(rect(), Qt::transparent);
+    //painter.fillRect(rect(), Qt::white);
 
     if (presentImage.isNull())
         return;
