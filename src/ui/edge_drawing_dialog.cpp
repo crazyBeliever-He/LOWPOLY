@@ -1,6 +1,7 @@
 #include "edge_drawing_dialog.h"
 #include "ui_edge_drawing_dialog.h"
 
+#include "edge_drawing_lib.h"
 #include "params_util.h"
 
 EDParamDialog::EDParamDialog(QWidget *parent)

@@ -13,18 +13,17 @@
 class BaseDialog : public QDialog
 {
     Q_OBJECT
-public:
-    explicit BaseDialog(QWidget *parent = nullptr) : QDialog(parent)
-    {
-        // 设置窗口属性: 关闭时不销毁, 只是隐藏(实现单例复用)
-        this->setAttribute(Qt::WA_QuitOnClose, false);
-    }
-    virtual ~BaseDialog() {}
 
+private:
+    QLabel* label_Status = nullptr;
+
+public:
+    explicit BaseDialog(QWidget *parent = nullptr) : QDialog(parent){}
+    virtual ~BaseDialog() {}
 signals:
     void dataSubmitted(const QVariant &data);
 
-// ---------- 子类必须实现的方法 ----------
+// --- 子类必须实现的方法 ---
 public:
     // 设置当前界面上的数据
     virtual void setData(const QVariant &data) = 0;
@@ -38,11 +37,13 @@ protected:
     // 用于主窗口处理完后，更新子窗口状态(如清空输入或显示提示)
     virtual void onSubmissionResult(bool success, const QString &message) = 0;
 
-// ---------- 公用实现 ----------
+// --- 公用实现 ---
 protected:
     // 统一初始化: 在子类 setupUi 之后调用
     void initDialogConnections()
     {
+        // 设置窗口属性: 关闭时不销毁, 只是隐藏(实现单例复用)
+        this->setAttribute(Qt::WA_QuitOnClose, false);
         // 将焦点给窗口背景, 这样没有任何输入控件会被默认选中.
         this->setFocus();
         // 自动查找并连接按钮(前提是 ObjectName 统一)
@@ -52,8 +53,7 @@ protected:
         if (confirmBtn) connect(confirmBtn, &QPushButton::clicked, this, &BaseDialog::onConfirmButtonClicked);
         if (resetBtn) connect(resetBtn, &QPushButton::clicked, this, &BaseDialog::onResetButtonClicked);
     }
-
-    // confirm Button 的操作
+    // confirm Button 操作
     void onConfirmButtonClicked()
     {
         QVariant currentData = getData();
@@ -77,18 +77,16 @@ protected:
                 return; // 用户选择返回修改
             }
         }
-        // 2. 校验通过，发射信号
+        // 2. 校验通过, 发射信号
         updateStatus(tr("Parameters submitted."), "green");
         emit dataSubmitted(currentData);
     }
-
-    // reset Button 的操作
+    // reset Button 操作
     void onResetButtonClicked()
     {
         setData(getDefaultData());
         updateStatus(tr("Parameters reset to default."), "blue");
     }
-
     // 设置状态栏文本及颜色
     void updateStatus(const QString &text, const QString &color = "black")
     {
@@ -98,9 +96,6 @@ protected:
             label_Status->setStyleSheet(QString("color: %1;").arg(color));
         }
     }
-
-private:
-    QLabel* label_Status = nullptr;
 };
 
 #endif // BASE_DIALOG_H

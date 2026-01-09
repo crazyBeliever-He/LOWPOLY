@@ -6,7 +6,6 @@ bool EDParamsUtil::validateEDParams(const opencved::EDParams& params, QString& e
 {
     errorMessage = "";
     bool isValid = true;
-
     // --- 边缘检测相关参数 (5个) ---
     // 1. GradientThresholdValue (梯度阈值)
     // 源码逻辑：if (gradThresh < 1) gradThresh = 1;

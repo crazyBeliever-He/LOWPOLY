@@ -49,6 +49,12 @@
       </property>
       <item row="0" column="0">
        <widget class="QLabel" name="label_Epsilon">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>Epsilon</string>
         </property>
@@ -59,6 +65,12 @@
       </item>
       <item row="0" column="1">
        <widget class="QDoubleSpinBox" name="Epsilon">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="decimals">
          <number>4</number>
         </property>
@@ -75,6 +87,12 @@
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_Eta">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>Eta</string>
         </property>
@@ -85,6 +103,12 @@
       </item>
       <item row="1" column="1">
        <widget class="QDoubleSpinBox" name="Eta">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="decimals">
          <number>4</number>
         </property>

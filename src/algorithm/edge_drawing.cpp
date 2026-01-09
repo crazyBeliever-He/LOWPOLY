@@ -4,7 +4,6 @@
 #include <stack>
 #include <QPainter>
 
-
 float EdgeDrawing::lut[LUT_SIZE] = {0};
 bool EdgeDrawing::lutInitialized = false;
 
@@ -53,7 +52,6 @@ QImage EdgeDrawing::getEDImageFloat(const QImage &origin)
     return drawEdgeChains(origin.width(), origin.height(), chains);
 }
 
-/* 初始化sRGB到线性RGB的查找表(LUT) */
 void EdgeDrawing::initializeLUT()
 {   //预先计算并存储256个sRGB值到线性RGB值的转换结果，用于加速图像处理中的色彩空间转换。
     //sRGB色彩空间使用非线性编码(伽马≈2.2),而图像处理算法需要在线性色彩空间中进行计算。
@@ -79,15 +77,13 @@ inline float EdgeDrawing::getGrayValue(float r, float g, float b, GrayMethod met
     }
 }
 
-/* 伽马校正LUT 或 归一化normaization */
 inline float EdgeDrawing::getLinearValue(uchar value)
-{   // 如果使用 LUT,返回查表值. 否则直接线性归一化到 [0, 1]
+{   // 伽马校正LUT 或 归一化normaization. 如果使用 LUT,返回查表值. 否则直接线性归一化到 [0, 1]
     return useLut ? lut[value] : (value / 255.0f);
 }
 
-/* 将 0-255 的标准梯度阈值转换为适应数据流的梯度阈值 */
 inline float EdgeDrawing::calculateInternalThreshold(int stdThreshold, DataMode mode)
-{
+{   // 将 0-255 的标准梯度阈值转换为适应数据流的梯度阈值
     return (mode == MODE_FLOAT) ? (stdThreshold / 255.0f) : (stdThreshold * 257.0f);
 }
 
@@ -189,9 +185,8 @@ FloatImage EdgeDrawing::convertColorToGrayFloat(const QImage &input)
     return output;
 }
 
-/* defalut kernel size is 5, sigma = 1.0f, use BORDER_REFLECT_101(镜像边界) */
 QImage EdgeDrawing::gaussianBlurGrayscale16(const QImage &image, int kSize, float sigma)
-{
+{   // defalut kernel size is 5, sigma = 1.0f, use BORDER_REFLECT_101(镜像边界)
     if(kSize <= 1 || sigma <= 0.0f) return image;
     if (image.isNull() || image.format() != QImage::Format_Grayscale16)
         return image;
@@ -200,13 +195,12 @@ QImage EdgeDrawing::gaussianBlurGrayscale16(const QImage &image, int kSize, floa
     int height = image.height();
     QImage result(image.size(), QImage::Format_Grayscale16);
 
-    //一维高斯函数的标准正态分布公式, 因为常数项在归一化的过程中被约掉，所以无需实现常数项部分
-    // 生成一维高斯核(可分离卷积特性)
+    //一维高斯函数的标准正态分布公式, 因为常数项在归一化的过程中被约掉,所以无需实现常数项部分.
     std::vector<float> kernel(kSize);
     float sum = 0.0f;
     int half = kSize / 2;
     for (int i = 0; i < kSize; ++i)
-    {
+    {    // 生成一维高斯核(可分离卷积特性)
         float x = static_cast<float>(i - half);
         kernel[i] = std::exp(-(x * x) / (2.0f * sigma * sigma));
         sum += kernel[i];
@@ -263,9 +257,9 @@ QImage EdgeDrawing::gaussianBlurGrayscale16(const QImage &image, int kSize, floa
     return result;
 }
 
-/* defalut kernel size is 5, sigma = 1.0f, use BORDER_REFLECT_101(镜像边界) */
+
 FloatImage EdgeDrawing::gaussianBlurFloat(const FloatImage &input, int kSize, float sigma)
-{
+{   // defalut kernel size is 5, sigma = 1.0f, use BORDER_REFLECT_101(镜像边界)
     if (input.data.empty() || kSize <= 1 || sigma <= 0.0f)
         return input;
 
@@ -273,11 +267,11 @@ FloatImage EdgeDrawing::gaussianBlurFloat(const FloatImage &input, int kSize, fl
     int height = input.height;
     FloatImage output = {width, height, std::vector<float>(width * height)};
 
-    // 生成一维高斯核(可分离卷积特性)
     std::vector<float> kernel(kSize);
     float sum = 0.0f;
     int half = kSize / 2;
-    for (int i = 0; i < kSize; ++i) {
+    for (int i = 0; i < kSize; ++i)
+    {   // 生成一维高斯核(可分离卷积特性)
         float x = static_cast<float>(i - half);
         kernel[i] = std::exp(-(x * x) / (2.0f * sigma * sigma));
         sum += kernel[i];
@@ -332,9 +326,9 @@ FloatImage EdgeDrawing::gaussianBlurFloat(const FloatImage &input, int kSize, fl
     }
     return output;
 }
-/* 梯度计算 Prewitt operator */
+
 GradientInfo EdgeDrawing::computeGradientGrayscale16(const QImage &image)
-{
+{   // 梯度计算 Prewitt operator
     int w = image.width();
     int h = image.height();
     // 根据不同的数据流, 使用不同的特化参数
@@ -377,7 +371,6 @@ GradientInfo EdgeDrawing::computeGradientGrayscale16(const QImage &image)
     return gradient;
 }
 
-/* 梯度计算 Prewitt operator */
 GradientInfo EdgeDrawing::computeGradientFloat(const FloatImage &input)
 {
     int w = input.width;
@@ -411,9 +404,8 @@ GradientInfo EdgeDrawing::computeGradientFloat(const FloatImage &input)
     return grad;
 }
 
-/* get anchors */
 std::vector<QPoint> EdgeDrawing::extractAnchors()
-{
+{   // get anchors
     std::vector<QPoint> anchors;
     int w = gradient.width;
     int h = gradient.height;
@@ -446,9 +438,8 @@ std::vector<QPoint> EdgeDrawing::extractAnchors()
     return anchors;
 }
 
-/* smart route */
 std::vector<EdgeChain> EdgeDrawing::graySmartRouting(const std::vector<QPoint> &anchors)
-{
+{   // smart route
     int w = gradient.width;
     int h = gradient.height;
     // 初始化 EdgeMap, 使用 edgeMap 记录已访问像素
@@ -468,9 +459,8 @@ std::vector<EdgeChain> EdgeDrawing::graySmartRouting(const std::vector<QPoint> &
     return allChains;
 }
 
-/* route */
 void EdgeDrawing::route(EdgeChain &chain, int x, int y)
-{   //目前路由的缺点: 生成的边缘图像物理的边缘有 1 像素的空隙. 卷积算子Prewitt也有边缘缩进情况.
+{   // route. 目前路由的缺点: 生成的边缘图像物理的边缘有 1 像素的空隙. 卷积算子Prewitt也有边缘缩进情况.
     int w = gradient.width;
     int h = gradient.height;
     int idx = y * w + x;
@@ -485,8 +475,7 @@ void EdgeDrawing::route(EdgeChain &chain, int x, int y)
 
     // 3. 根据当前像素的边缘方向决定生长路径
     if (gradient.direction[idx] == EDGE_HORIZONTAL)
-    {
-        // --- 水平边缘：向左和向右生长 ---
+    {   // --- 水平边缘：向左和向右生长 ---
         // 尝试向左 (Go Left: x-1)
         if (!edgeMap[(y-1)*w + (x-1)] && !edgeMap[y*w + (x-1)] && !edgeMap[(y+1)*w + (x-1)])
         {
@@ -514,8 +503,8 @@ void EdgeDrawing::route(EdgeChain &chain, int x, int y)
                 route(chain, x + 1, y);
         }
     }
-    else {
-        // --- 垂直边缘：向上和向下生长 ---
+    else
+    {   // --- 垂直边缘：向上和向下生长 ---
         // 尝试向上 (Go Top: y-1)
         if (!edgeMap[(y-1)*w + (x-1)] && !edgeMap[(y-1)*w + x] && !edgeMap[(y-1)*w + (x+1)])
         {
@@ -554,10 +543,10 @@ void EdgeDrawing::routeStack(EdgeChain &chain, int startX, int startY)
     std::stack<QPoint> s;
     s.push(QPoint(startX, startY));
 
-    while (!s.empty()) {
+    while (!s.empty())
+    {
         QPoint current = s.top();
         s.pop();
-
         int x = current.x();
         int y = current.y();
         int idx = y * w + x;
@@ -572,8 +561,7 @@ void EdgeDrawing::routeStack(EdgeChain &chain, int startX, int startY)
 
         // 3. 根据方向探测邻居并入栈
         if (gradient.direction[idx] == EDGE_HORIZONTAL)
-        {
-            // --- 处理水平边缘 (向左和向右) ---
+        {   // --- 处理水平边缘 (向左和向右) ---
             // 右侧探测 (后入栈，先处理)
             if (!edgeMap[(y-1)*w + (x+1)] && !edgeMap[y*w + (x+1)] && !edgeMap[(y+1)*w + (x+1)])
                 s.push(findBestNeighbor(x + 1, y, true)); // true 表示垂直扫描三个邻居
@@ -582,8 +570,8 @@ void EdgeDrawing::routeStack(EdgeChain &chain, int startX, int startY)
                 s.push(findBestNeighbor(x - 1, y, true));
 
         }
-        else {
-            // --- 处理垂直边缘 (向上和向下) ---
+        else
+        {   // --- 处理垂直边缘 (向上和向下) ---
             // 下方探测
             if (!edgeMap[(y+1)*w + (x-1)] && !edgeMap[(y+1)*w + x] && !edgeMap[(y+1)*w + (x+1)])
                 s.push(findBestNeighbor(x, y + 1, false)); // false 表示水平扫描三个邻居
@@ -600,20 +588,25 @@ QPoint EdgeDrawing::findBestNeighbor(int targetX, int targetY, bool isVerticalSc
     float maxG = -1.0f;
     QPoint bestP(targetX, targetY);
 
-    if (isVerticalScan) {
-        // 固定 X，扫描 Y-1, Y, Y+1
-        for (int oy = -1; oy <= 1; ++oy) {
+    if (isVerticalScan)
+    {   // 固定 X，扫描 Y-1, Y, Y+1
+        for (int oy = -1; oy <= 1; ++oy)
+        {
             float g = gradient.magnitude[(targetY + oy) * w + targetX];
-            if (g > maxG) {
+            if (g > maxG)
+            {
                 maxG = g;
                 bestP = QPoint(targetX, targetY + oy);
             }
         }
-    } else {
-        // 固定 Y，扫描 X-1, X, X+1
-        for (int ox = -1; ox <= 1; ++ox) {
+    }
+    else
+    {   // 固定 Y，扫描 X-1, X, X+1
+        for (int ox = -1; ox <= 1; ++ox)
+        {
             float g = gradient.magnitude[targetY * w + (targetX + ox)];
-            if (g > maxG) {
+            if (g > maxG)
+            {
                 maxG = g;
                 bestP = QPoint(targetX + ox, targetY);
             }
@@ -621,7 +614,6 @@ QPoint EdgeDrawing::findBestNeighbor(int targetX, int targetY, bool isVerticalSc
     }
     return bestP;
 }
-
 
 QImage EdgeDrawing::drawEdgeChains(int width, int height, const std::vector<EdgeChain> &chains)
 {
@@ -631,20 +623,21 @@ QImage EdgeDrawing::drawEdgeChains(int width, int height, const std::vector<Edge
     // 预定义一些颜色，方便区分不同的 Chain
     QColor colors[] = {Qt::green, Qt::red, Qt::yellow, Qt::cyan, Qt::magenta, Qt::blue};
     int colorCount = 6;
-    for (size_t i = 0; i < chains.size(); ++i) {
-        // 每个 Chain 用不同的颜色绘制，方便观察是否断裂
+    for (size_t i = 0; i < chains.size(); ++i)
+    {   // 每个 Chain 用不同的颜色绘制，方便观察是否断裂
         QColor drawColor = colors[i % colorCount];
-
         for (const QPoint &pt : chains[i].points)
-        {
-            // 确保坐标在图像范围内
-            if (pt.x() >= 0 && pt.x() < width && pt.y() >= 0 && pt.y() < height) {
+        {   // 确保坐标在图像范围内
+            if (pt.x() >= 0 && pt.x() < width && pt.y() >= 0 && pt.y() < height)
+            {
                 result.setPixelColor(pt.x(), pt.y(), drawColor);
             }
         }
     }
     return result;
 }
+
+// ----------------------------------------------------------------------------------------------------
 
 void EdgeDrawing::edgeDrawingInLib(const QImage &originalImage)
 {

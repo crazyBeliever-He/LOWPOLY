@@ -12,53 +12,38 @@ class ImageModel : public QObject
     Q_OBJECT
 
 public:
-    enum ImageType {
-        TYPE_ORIGIN = 0,    // 原始图像
-        TYPE_EDGEDRAWING,
-        TYPE_DOUGLASPOINT,
-        TYPE_DOUGLASLINE,
-        NUM_TYPES           // 存储的图像数量
+    enum class ImageType {
+        Origin = 0,
+        EdgeDrawing,
+        DouglasPoint,
+        DouglasLine,
+        Count
     };
+    Q_ENUM(ImageType) // 允许 Qt 元系统识别
+
+private:
+    QVector<QImage> imageVector;    // 存储不同类型的图像
+    ImageType currentType = ImageType::Origin;    // 展示的图像
+    QString currentPath;    // 当前打开图像的路径
+    //bool modified = false;    // 图像是否变化
 
 public:
     explicit ImageModel(QObject *parent = nullptr);
 
+    // 辅助函数: type转换 int 函数
+    int typeToIdx(ImageType type) const;
+    const QImage &getImage(ImageType type) const;
+    const QImage &getcurrentImage() const;
+    void setImage(ImageType type, const QImage &img);
+    void setCurrentImageType(ImageType type);
 
-    bool loadFromFile(const QString &path);
-    bool saveToFile(const QString &path,
-                    const QString &format = "PNG",
-                    int quality = 100);
-
-    /*获取指定类型的图像*/
-    const QImage &getImage(ImageType type) const{return imageVector[type];}
-    /*获取当前展示类型的图像*/
-    const QImage &getcurrentImage() const{ return imageVector[displayType];}
-    /*获取当前展示的类型*/
-    //ImageType getCurrentImageType() const{return displayType;}
-    /* 保存处理后的图像 */
-    void setImageData(ImageType type, const QImage &img);
-
-public slots:
-    /*切换当前展示图像类型*/
-    void setDisplayType(ImageType type);
+    bool loadImage(const QString &path);
+    bool saveImage(const QString &path, const QString &format = "PNG", int quality = 100);
 
 signals:
-    /*切换源图像*/
-    void originImageChanged(const QImage &newImage);
-    /*当前显示图像变化*/
-    void displayTypeUpdated(const QImage &newImage);
-    /*切换打开文件的路径*/
-    //void filePathChanged(const QString &newPath);
-
-private:
-    QVector<QImage> imageVector;
-    ImageType displayType = TYPE_ORIGIN;
-
-    /*当前打开图像的路径*/
-    QString currentPath;
-    /*图像是否变化*/
-    //bool modified = false;
+    void originImageChanged(const QImage &newImage);    // 切换源图像
+    void displayImageUpdated(const QImage &newImage);   // 当前显示图像变化
+    //void filePathChanged(const QString &newPath); // 切换打开文件的路径
 };
-
 
 #endif // IMAGE_MODEL_H

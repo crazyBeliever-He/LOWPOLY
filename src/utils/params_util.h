@@ -6,11 +6,11 @@
 
 //默认参数只能在函数声明中指定，不能在函数定义中重复
 
-class EDParamsUtil {
+class EDParamsUtil
+{
 public:
     //校验参数合法性. errorMessage 如果校验失败,存储错误描述信息
     static bool validateEDParams(const opencved::EDParams &params, QString& errorMessage);
-
     static void setEDParams(opencved::EDParams& params, bool PFmode = false,
                             int EdgeDetectionOperator = 1, int GradientThresholdValue = 20,
                             int AnchorThresholdValue = 0, int ScanInterval = 1,
@@ -18,24 +18,19 @@ public:
                             bool SumFlag = true, bool NFAValidation = true,
                             int MinLineLength = 10, double MaxDistanceBetweenTwoLines = 6.0,
                             double LineFitErrorThreshold = 1.0,double MaxErrorThreshold = 1.3);
-
     static bool compareEDParams(const opencved::EDParams &params1, const opencved::EDParams &params2);
-
     static void getDefaultEDParams(opencved::EDParams &p);
 };
 
-class DPParamsUtil{
+class DPParamsUtil
+{
 public:
     //校验参数合法性. errorMessage 如果校验失败,存储错误描述信息
     static bool validateDPParams(const DPParams &params, QString &errorMessage);
-
     static void setDPParams(DPParams &params, double epsilon = 1.5, double eta = 0.02);
-
     static bool compareDPParams(const DPParams &params1, const DPParams &params2);
-
     static void getDefaultDPParams(DPParams &p);
 
 };
-
 
 #endif // PARAMS_UTIL_H

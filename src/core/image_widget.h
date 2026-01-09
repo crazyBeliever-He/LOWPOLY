@@ -12,36 +12,34 @@ class ImageWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit ImageWidget(QWidget *parent = nullptr);
-
-    /*设置并显示图像*/
-    void setImage(const QImage &img);
-    void setOriginImage(const QImage &img);
+    bool autoSize;  // 是否自适应窗口大小
+    bool editFunc;
+private:
+    QImage presentImage;        // 当前图像的源数据
+    QPixmap cachedPixmap;       // 经过缩放偏的移缓存数据
+    double scale = 1.0;         // 缩放比例
+    double cachedScale = 0.0;   // 缓存的缩放比例
+    QPointF offset;             // 偏移量
+    QPointF lastMousePos;       // 鼠标最新位置
 
 public:
-    /* 是否自适应窗口大小 */
-    bool autoSize;
-    bool editFunc;
-
+    explicit ImageWidget(QWidget *parent = nullptr);
+    // 更新图像内容. 在算法处理结果之间切换显示.
+    void updateImageKeepView(const QImage &img);
+    // 加载新图像并重置所有显示参数. 打开新图片文件.
+    void updateImageResetView(const QImage &img);
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
-
 private:
-    /* 根据窗口大小计算自适应缩放 */
+    // 根据窗口大小计算自适应缩放
     void adjustToWindowSize();
+    // 更新缓存的图像数据
     void updateCachedPixmap();
+    // 将控件坐标映射到原图坐标
     QPointF widgetToImage(const QPointF &p) const;
-
-private:
-    QImage presentImage;        // 当前显示的图像源数据
-    QPixmap cachedPixmap;       // 可能经过缩放偏移的图像数据
-    double scale = 1.0;         // 缩放比例
-    double cachedScale = 0.0;   // 缓存的缩放比例
-    QPointF offset;             // 偏移量
-    QPointF lastMousePos;       // 鼠标最新位置
 };
 
 #endif // IMAGE_WIDGET_H

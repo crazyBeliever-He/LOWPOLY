@@ -20,11 +20,14 @@ Widget::Widget(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // image controller, model, widget
+    // 1. ImageWidget: 由 Qt 父子树管理 (middleWidget 负责释放)
     ImageWidget *imageWidget = new ImageWidget(this->ui->middleWidget);
     imageWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     ui->middleWidget->layout()->addWidget(imageWidget);
-    ImageModel *imageModel = new ImageModel();
+
+    // 2. ImageModel: 指定一个父对象 Widget. 当 Widget 销毁时,imageModel 也会被自动释放.
+    ImageModel *imageModel = new ImageModel(this);
+    // 3. ImageController 所有权归属: Widget. 释放机制: Qt 对象树 (Parent-Child).
     imageController = new ImageController(imageModel, imageWidget, this);
 
     // init widgets
@@ -41,10 +44,10 @@ void Widget::initMenuWidget()
     QAction *openImageAction = fileMenu->addAction(tr("Open"));
     QAction *saveImageAction = fileMenu->addAction(tr("Save"));
     connect(openImageAction, &QAction::triggered, this, [this]() {
-        imageController->openImageWithDialog(this);
+        imageController->onOpenImage(this);
     });
     connect(saveImageAction, &QAction::triggered, this, [this]() {
-        imageController->saveImageWithDialog(this);
+        imageController->onSaveImage(this);
     });
 
     //setting menu
@@ -55,8 +58,8 @@ void Widget::initMenuWidget()
     ui->aboutButton->setMenu(aboutMenu);
     QAction *aboutProgramAction = aboutMenu->addAction(tr("Program"));
     QAction *aboutAuthorAction = aboutMenu->addAction(tr("Auther"));
-    connect(aboutProgramAction, &QAction::triggered, this, &Widget::showAboutProgram);
-    connect(aboutAuthorAction, &QAction::triggered, this, &Widget::showAboutAuthor);
+    connect(aboutProgramAction, &QAction::triggered, this, &Widget::onShowAboutProgram);
+    connect(aboutAuthorAction, &QAction::triggered, this, &Widget::onShowAboutAuthor);
 }
 
 void Widget::initSettingBtnInMenu()
@@ -146,21 +149,21 @@ void Widget::initContentWidget()
 void Widget::initStatusWidget()
 {
     // 连接报错和状态信息
-    connect(imageController, &ImageController::errorOccurred, this, &Widget::showErrorMessage);
-    connect(imageController, &ImageController::statusMessage, this, &Widget::showStatusMessage);
+    connect(imageController, &ImageController::errorOccurred, this, &Widget::onShowErrorMessage);
+    connect(imageController, &ImageController::statusMessage, this, &Widget::onShowStatusMessage);
 }
 
-void Widget::showErrorMessage(const QString &msg)
+void Widget::onShowErrorMessage(const QString &msg)
 {
     QMessageBox::warning(this, "Error", msg);
 }
 
-void Widget::showStatusMessage(const QString &msg)
+void Widget::onShowStatusMessage(const QString &msg)
 {
     ui->statusLabel->setText(msg);
 }
 
-void Widget::showAboutProgram()
+void Widget::onShowAboutProgram()
 {
     QMessageBox::information(this,
                              "About Program",
@@ -168,7 +171,7 @@ void Widget::showAboutProgram()
                              "Version 0.1");
 }
 
-void Widget::showAboutAuthor()
+void Widget::onShowAboutAuthor()
 {
     // 带有超链接的HTML内容
     QString aboutText = "<div style=\"text-align: center;\">"
@@ -186,5 +189,4 @@ void Widget::showAboutAuthor()
 Widget::~Widget()
 {
     delete ui;
-    delete imageController;
 }

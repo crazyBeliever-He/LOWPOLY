@@ -11,7 +11,7 @@ ImageWidget::ImageWidget(QWidget *parent)
     setMouseTracking(true); // 启用鼠标跟踪（不按下按钮也能接收移动事件）
 }
 
-void ImageWidget::setImage(const QImage &img)
+void ImageWidget::updateImageKeepView(const QImage &img)
 {
     if(img.isNull())
     {
@@ -19,14 +19,13 @@ void ImageWidget::setImage(const QImage &img)
         return;
     }
     presentImage = img;
-
     // 不重置缩放值, 但应该缓存失效, 否则会继续绘制旧图片的缓存
     cachedScale = -1.0;
-
+    // 重绘
     update();
 }
 
-void ImageWidget::setOriginImage(const QImage &img)
+void ImageWidget::updateImageResetView(const QImage &img)
 {
     if(img.isNull())
     {
@@ -34,7 +33,6 @@ void ImageWidget::setOriginImage(const QImage &img)
         return;
     }
     presentImage = img;
-
     // 重置显示状态
     scale = 1.0;
     offset = QPoint(0, 0);
@@ -42,8 +40,7 @@ void ImageWidget::setOriginImage(const QImage &img)
     // 初始加载时适应窗口
     if (autoSize)
         adjustToWindowSize();
-
-    //重绘,如果后续进行不同处理结果切换时出现不显示的bug,取消注释
+    // 重绘
     update();
 }
 
@@ -60,7 +57,7 @@ void ImageWidget::adjustToWindowSize()
     //Qt::FastTransformation直接取最近的像素颜色.当放大倍数很大时,看到一个个完美的正方形像素点,边界极其清晰.
     cachedPixmap = QPixmap::fromImage(presentImage.scaled(newSize, Qt::KeepAspectRatio, Qt::FastTransformation));
 }
-/*将控件坐标映射到原图坐标*/
+
 QPointF ImageWidget::widgetToImage(const QPointF &wpos) const
 {
     return (wpos - offset) / scale;
@@ -79,7 +76,6 @@ void ImageWidget::updateCachedPixmap()
             Qt::KeepAspectRatio,
             Qt::FastTransformation)
         );
-
     cachedScale = scale;
 }
 
@@ -105,8 +101,8 @@ void ImageWidget::mousePressEvent(QMouseEvent *event)
 
 void ImageWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    if (event->buttons() & Qt::LeftButton) {
-
+    if (event->buttons() & Qt::LeftButton)
+    {
         QPointF delta = event->pos() - lastMousePos;
         offset += delta;
         lastMousePos = event->pos();
@@ -121,14 +117,11 @@ void ImageWidget::wheelEvent(QWheelEvent *event)
 
     QPointF mousePos = event->position();
     QPointF imgPosBefore = widgetToImage(mousePos);
-
     // 缩放
     double factor = (event->angleDelta().y() > 0) ? 1.1 : 0.9;
     scale *= factor;
-
     // 限制范围
     scale = qBound(0.05, scale, 20.0);
-
     // 使缩放中心在鼠标位置
     QPointF imgPosAfter = imgPosBefore * scale + offset;
     offset += (mousePos - imgPosAfter);

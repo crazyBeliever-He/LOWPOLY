@@ -36,17 +36,6 @@ public:
 
 class Logger
 {
-public:
-    Logger(const char* className, const char* functionName, int line, Level level);
-    ~Logger();
-
-    QTextStream& stream();
-
-    static void init(Level level = Info, const QString& filePath = "LowPolyLog.txt");
-    static void destroy();
-    static bool isEnabled(Level level);
-    static QString levelToString(Level level);
-
 private:
     QTextStream myStream;
     QString myBuffer;
@@ -55,6 +44,16 @@ private:
     static LoggerConfig* sConfig;
     static QMutex sInitMutex;
     static bool sLoggerInitialized;
+
+public:
+    Logger(const char* className, const char* functionName, int line, Level level);
+    ~Logger();
+
+    QTextStream& stream();
+    static void init(Level level = Info, const QString& filePath = "LowPolyLog.txt");
+    static void destroy();
+    static bool isEnabled(Level level);
+    static QString levelToString(Level level);
 };
 
 // 日志宏定义

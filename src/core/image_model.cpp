@@ -7,10 +7,41 @@
 
 ImageModel::ImageModel(QObject *parent) : QObject(parent)
 {
-    imageVector.resize(NUM_TYPES);
+    imageVector.resize(typeToIdx(ImageType::Count));
 }
 
-bool ImageModel::loadFromFile(const QString &path)
+int ImageModel::typeToIdx(ImageType type) const
+{
+    return static_cast<int>(type);
+}
+
+const QImage &ImageModel::getImage(ImageType type) const
+{
+    return imageVector[typeToIdx(type)];
+}
+
+const QImage &ImageModel::getcurrentImage() const
+{
+    return imageVector[typeToIdx(currentType)];
+}
+
+void ImageModel::setImage(ImageType type, const QImage &img)
+{
+    if (img.isNull()) return;
+    imageVector[typeToIdx(type)] = img;
+    if (type == currentType)
+    {
+        emit displayImageUpdated(img);
+    }
+}
+
+void ImageModel::setCurrentImageType(ImageType type)
+{
+    currentType = type;
+    emit displayImageUpdated(getImage(type));
+}
+
+bool ImageModel::loadImage(const QString &path)
 {
     if (path.isEmpty())
     {
@@ -34,15 +65,15 @@ bool ImageModel::loadFromFile(const QString &path)
         LOG_ERROR << "Load failed: Invalid image format - " << path;
         return false;
     }
-    imageVector[TYPE_ORIGIN] = img;
-    displayType = TYPE_ORIGIN;
+    imageVector[typeToIdx(ImageType::Origin)] = img;
+    currentType = ImageType::Origin;
     currentPath = path;
 
     emit originImageChanged(img);
     return true;
 }
 
-bool ImageModel::saveToFile(const QString &path, const QString &format, int quality)
+bool ImageModel::saveImage(const QString &path, const QString &format, int quality)
 {
     const QImage &img = getcurrentImage();
     if (img.isNull())
@@ -70,24 +101,4 @@ bool ImageModel::saveToFile(const QString &path, const QString &format, int qual
         LOG_WARNING << "Save failed: Failed to save image - " << path;
     }
     return success;
-}
-
-void ImageModel::setImageData(ImageType type, const QImage &img)
-{
-    if (img.isNull()) return;
-    imageVector[type] = img;
-    if (type == displayType)
-    {
-        setDisplayType(type);
-    }
-}
-
-void ImageModel::setDisplayType(ImageType type)
-{
-    //if (displayType == type) return;
-    if (type >= imageVector.size()) return;
-
-    displayType = type;
-    const QImage &img = imageVector[type];
-    emit displayTypeUpdated(img);
 }

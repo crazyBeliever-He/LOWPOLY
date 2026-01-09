@@ -1,6 +1,7 @@
 #include "douglas_peucker_dialog.h"
 #include "ui_douglas_peucker_dialog.h"
 
+#include "algorithm_params.h"
 #include "params_util.h"
 
 DPParamDialog::DPParamDialog(QWidget *parent)

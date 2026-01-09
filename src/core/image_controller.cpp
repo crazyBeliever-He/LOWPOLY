@@ -4,6 +4,12 @@
 #include <QPainter>
 #include "logger.h"
 #include "params_util.h"
+// 包含所有前向声明过的完整定义
+#include "image_model.h"
+#include "image_widget.h"
+#include "algorithm_params.h"
+#include "edge_drawing.h"
+#include "douglas_peucker.h"
 
 ImageController::ImageController(ImageModel *model,
                                  ImageWidget *view,
@@ -13,27 +19,45 @@ ImageController::ImageController(ImageModel *model,
     imageWidget(view)
 {
     // 1. edge drawing 参数初始化
-    edgeDrawing = new EdgeDrawing();
+    edgeDrawing = std::make_unique<EdgeDrawing>();
     EDParamsUtil::getDefaultEDParams(edgeDrawing->edParams);
 
     // 2. douglas peucker 参数初始化
-    douglasPeucker = new DouglasPeucker();
+    douglasPeucker = std::make_unique<DouglasPeucker>();
     DPParamsUtil::getDefaultDPParams(douglasPeucker->dpParams);
 
     // n. 实现connect
     // 切换源图
     connect(imageModel, &ImageModel::originImageChanged,
-            this, &ImageController::applyAllImageProcess);
-    // ImageModel 和 ImageWidget 解耦, 切换源图和其他图片分别执行不同的绘制操作
-    connect(imageModel, &ImageModel::originImageChanged,
-            imageWidget, &ImageWidget::setOriginImage);
-    connect(imageModel, &ImageModel::displayTypeUpdated,
-            imageWidget, &ImageWidget::setImage);
+            this, &ImageController::onOriginImageChanged);
+    // ImageModel 和 ImageWidget 解耦
+    connect(imageModel, &ImageModel::displayImageUpdated,
+            imageWidget, &ImageWidget::updateImageKeepView);
+}
+
+void ImageController::onOriginImageChanged(const QImage& img)
+{
+    // 重置widget ui
+    emit requestUiReset();
+    currentStage = ProcessStage::None;
+    // 执行算法
+    applyAllImageProcess();
+    // 通知 ImageWidget 展示源图
+    imageWidget->updateImageResetView(img);
+}
+
+void ImageController::onImageTypeSelected(int intType)
+{
+    ImageModel::ImageType imageType = ImageModel::ImageType::Origin;
+    if (intType >= 0 && intType < imageModel->typeToIdx(ImageModel::ImageType::Count))
+    {
+        imageType = static_cast<ImageModel::ImageType>(intType);
+        imageModel->setCurrentImageType(imageType);
+    }
 }
 
 void ImageController::applyAllImageProcess()
-{
-    // emit requestUiReset();
+{   // 后续改进: 开启一个工作线程(Worker Thread)执行该函数
     // 阶段 1: Edge Drawing. 如果当前 ED 没做,则执行它
     if (currentStage < ProcessStage::EdgeDrawingDone)
     {
@@ -50,57 +74,50 @@ void ImageController::applyAllImageProcess()
 
 void ImageController::applyEdgeDrawing()
 {
-    QImage originImage = imageModel->getImage(ImageModel::TYPE_ORIGIN);
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
     edgeDrawing->edgeDrawingInLib(originImage);
     QImage edgeMap = edgeDrawing->drawImage(originImage.width(), originImage.height());
-    imageModel->setImageData(ImageModel::TYPE_EDGEDRAWING, edgeMap);
-
-    // int totalPoints = 0;
-    // for(int i = 0; i < edgeDrawing->edResults.data.segmentCount; i++)
-    // {
-    //     totalPoints +=  edgeDrawing->edResults.data.segments[i].count;
-    // }
-    // qDebug() << QString("points after edge drawing : %1").arg(totalPoints);
+    imageModel->setImage(ImageModel::ImageType::EdgeDrawing, edgeMap);
 }
 
 void ImageController::applyDouglasPeucker()
 {
-    QImage originImage = imageModel->getImage(ImageModel::TYPE_ORIGIN);
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
     int w = originImage.width();
     int h = originImage.height();
     douglasPeucker->simplify(edgeDrawing->edResults, w, h);
     QImage pointMap = douglasPeucker->drawPointImage(w, h);
-    imageModel->setImageData(ImageModel::TYPE_DOUGLASPOINT, pointMap);
+    imageModel->setImage(ImageModel::ImageType::DouglasPoint, pointMap);
     QImage lineMap = douglasPeucker->drawLineImage(w, h);
-    imageModel->setImageData(ImageModel::TYPE_DOUGLASLINE, lineMap);
+    imageModel->setImage(ImageModel::ImageType::DouglasLine, lineMap);
+}
 
-    // int totalPoints = 0;
-    // for(std::vector<QPoint>& i : douglasPeucker->dpResults)
-    // {
-    //     totalPoints += static_cast<int>(i.size());
-    // }
-    // qDebug() << QString("points after douglas peucker : %1").arg(totalPoints);
+opencved::EDParams ImageController::getEDParams() const
+{
+    return edgeDrawing->edParams;
 }
 
 void ImageController::setEDParams(const opencved::EDParams& newParams)
 {
     if (!EDParamsUtil::compareEDParams(edgeDrawing->edParams, newParams))
-    {
+    {   // ED 参数变了，当前进度重置为 None
         edgeDrawing->edParams = newParams;
-        // ED 参数变了，当前进度重置为 None
         currentStage = ProcessStage::None;
         applyAllImageProcess();
     }
 }
 
+DPParams ImageController::getDPParams() const
+{
+    return douglasPeucker->dpParams;
+}
 void ImageController::setDPParams(const DPParams& newParams)
 {
     if(newParams.epsilon != douglasPeucker->dpParams.epsilon ||
         newParams.eta != douglasPeucker->dpParams.eta)
-    {
+    {   // 如果 DP 参数变了，进度最多只能维持在 EdgeDrawing 完成状态
         douglasPeucker->dpParams.epsilon = newParams.epsilon;
         douglasPeucker->dpParams.eta = newParams.eta;
-        // 如果 DP 参数变了，进度最多只能维持在 EdgeDrawing 完成状态
         if (currentStage > ProcessStage::EdgeDrawingDone)
         {
             currentStage = ProcessStage::EdgeDrawingDone;
@@ -109,7 +126,12 @@ void ImageController::setDPParams(const DPParams& newParams)
     }
 }
 
-void ImageController::openImageWithDialog(QWidget *parent)
+void ImageController::onAutoSize(bool isAuto)
+{
+    imageWidget->autoSize = isAuto;
+}
+
+void ImageController::onOpenImage(QWidget *parent)
 {
     QString path = QFileDialog::getOpenFileName(parent,
                                                 tr("Open"),
@@ -120,8 +142,7 @@ void ImageController::openImageWithDialog(QWidget *parent)
         emit statusMessage(tr("Open canceled"));
         return;
     }
-    //emit statusMessage(tr("Loading..."));
-    if (imageModel->loadFromFile(path))
+    if (imageModel->loadImage(path))
     {
         emit statusMessage(tr("Image loaded"));
         LOG_INFO << "Load: " << path;
@@ -130,7 +151,7 @@ void ImageController::openImageWithDialog(QWidget *parent)
     emit errorOccurred(tr("Failed to load image from: ") + path);
 }
 
-void ImageController::saveImageWithDialog(QWidget *parent)
+void ImageController::onSaveImage(QWidget *parent)
 {
     if (imageModel->getcurrentImage().isNull())
     {
@@ -146,8 +167,7 @@ void ImageController::saveImageWithDialog(QWidget *parent)
         emit statusMessage(tr("Save canceled"));
         return;
     }
-    //emit statusMessage(tr("Saving..."));
-    if(imageModel->saveToFile(path))
+    if(imageModel->saveImage(path))
     {
         emit statusMessage(tr("Image saved"));
         LOG_INFO << "Save: " << path;
@@ -156,22 +176,4 @@ void ImageController::saveImageWithDialog(QWidget *parent)
     emit errorOccurred(tr("Failed to save image to: ") + path);
 }
 
-void ImageController::onImageTypeSelected(int intType)
-{
-    ImageModel::ImageType imageType = ImageModel::TYPE_ORIGIN;
-    if (intType >= 0 && intType < ImageModel::NUM_TYPES)
-    {
-        imageType = static_cast<ImageModel::ImageType>(intType);
-        imageModel->setDisplayType(imageType);
-    }
-}
-
-ImageController::~ImageController()
-{
-    // 确保 imageWidget 不是 nullptr 且未被其他父控件删除
-    if (imageWidget != nullptr && !imageWidget->parent())
-    {
-        delete imageWidget;  // 如果 imageWidget 没有父控件，手动删除它
-    }
-    delete imageModel;  // 删除 imageModel
-}
+ImageController::~ImageController() = default;

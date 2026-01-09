@@ -58,6 +58,12 @@
       </property>
       <item row="3" column="0">
        <widget class="QLabel" name="label_MaxErrorThreshold">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>MaxErrorThreshold</string>
         </property>
@@ -65,6 +71,12 @@
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_MinLineLength">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>MinLineLength</string>
         </property>
@@ -72,6 +84,12 @@
       </item>
       <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="LineFitErrorThreshold">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="decimals">
          <number>4</number>
         </property>
@@ -85,6 +103,12 @@
       </item>
       <item row="1" column="1">
        <widget class="QCheckBox" name="NFAValidation">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>NFAValidation</string>
         </property>
@@ -92,6 +116,12 @@
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_NFAValidation">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>NFAValidation</string>
         </property>
@@ -99,6 +129,12 @@
       </item>
       <item row="2" column="1">
        <widget class="QSpinBox" name="MinLineLength">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="minimum">
          <number>-1</number>
         </property>
@@ -109,6 +145,12 @@
       </item>
       <item row="4" column="0">
        <widget class="QLabel" name="label_LineFitErrorThreshold">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>LineFitErrorThreshold</string>
         </property>
@@ -116,6 +158,12 @@
       </item>
       <item row="5" column="1">
        <widget class="QDoubleSpinBox" name="MaxDistanceBetweenTwoLines">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="decimals">
          <number>4</number>
         </property>
@@ -129,6 +177,12 @@
       </item>
       <item row="5" column="0">
        <widget class="QLabel" name="label_MaxDistanceBetweenTwoLines">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>MaxDistanceBetweenTwoLines</string>
         </property>
@@ -136,6 +190,12 @@
       </item>
       <item row="3" column="1">
        <widget class="QDoubleSpinBox" name="MaxErrorThreshold">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="decimals">
          <number>4</number>
         </property>
@@ -294,6 +354,12 @@
       </property>
       <item row="3" column="0">
        <widget class="QLabel" name="label_AnchorThresholdValue">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>AnchorThresholdValue</string>
         </property>
@@ -301,6 +367,12 @@
       </item>
       <item row="3" column="1">
        <widget class="QSpinBox" name="AnchorThresholdValue">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="maximum">
          <number>2147483647</number>
         </property>
@@ -308,6 +380,12 @@
       </item>
       <item row="6" column="1">
        <widget class="QDoubleSpinBox" name="Sigma">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="decimals">
          <number>4</number>
         </property>
@@ -324,6 +402,12 @@
       </item>
       <item row="5" column="1">
        <widget class="QSpinBox" name="MinPathLength">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="minimum">
          <number>3</number>
         </property>
@@ -334,6 +418,12 @@
       </item>
       <item row="7" column="0">
        <widget class="QLabel" name="label_SumFlag">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>SumFlag</string>
         </property>
@@ -341,6 +431,12 @@
       </item>
       <item row="6" column="0">
        <widget class="QLabel" name="label_Sigma">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>Sigma</string>
         </property>
@@ -348,6 +444,12 @@
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_EdgeDetectionOperator">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>EdgeDetectionOperator</string>
         </property>
@@ -355,6 +457,12 @@
       </item>
       <item row="7" column="1">
        <widget class="QCheckBox" name="SumFlag">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>SumFlag</string>
         </property>
@@ -362,6 +470,12 @@
       </item>
       <item row="4" column="0">
        <widget class="QLabel" name="label_ScanInterval">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>ScanInterval</string>
         </property>
@@ -369,6 +483,12 @@
       </item>
       <item row="0" column="1">
        <widget class="QCheckBox" name="PFmode">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>PFmode</string>
         </property>
@@ -376,6 +496,12 @@
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label_PFmode">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>PFmode</string>
         </property>
@@ -383,6 +509,12 @@
       </item>
       <item row="1" column="1">
        <widget class="QComboBox" name="EdgeDetectionOperator">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <item>
          <property name="text">
           <string>PREWITT</string>
@@ -407,6 +539,12 @@
       </item>
       <item row="5" column="0">
        <widget class="QLabel" name="label_MinPathLength">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>MinPathLength</string>
         </property>
@@ -414,6 +552,12 @@
       </item>
       <item row="2" column="1">
        <widget class="QSpinBox" name="GradientThresholdValue">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="minimum">
          <number>1</number>
         </property>
@@ -424,6 +568,12 @@
       </item>
       <item row="4" column="1">
        <widget class="QSpinBox" name="ScanInterval">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="minimum">
          <number>1</number>
         </property>
@@ -434,6 +584,12 @@
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_GradientThresholdValue">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
          <string>GradientThresholdValue</string>
         </property>
