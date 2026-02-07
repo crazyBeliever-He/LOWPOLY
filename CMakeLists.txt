@@ -54,6 +54,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/algorithm/algorithm_params.h
         src/algorithm/edge_drawing.h
         src/algorithm/edge_drawing.cpp
+        src/algorithm/saliency_detection.h
+        src/algorithm/saliency_detection.cpp
+        src/utils/test.h
+        src/utils/test.cpp
 
 
     )
