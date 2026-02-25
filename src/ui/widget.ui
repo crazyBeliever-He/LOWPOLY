@@ -457,6 +457,11 @@ QPushButton:hover, QToolButton:hover {
            <string>douglas peucker line</string>
           </property>
          </item>
+         <item>
+          <property name="text">
+           <string>saliency detection map</string>
+          </property>
+         </item>
         </widget>
        </widget>
       </item>

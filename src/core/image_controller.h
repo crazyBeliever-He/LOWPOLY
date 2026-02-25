@@ -22,6 +22,7 @@ class ImageModel;
 class ImageWidget;
 class EdgeDrawing;
 class DouglasPeucker;
+class SaliencyDetection;
 
 class ImageController : public QObject
 {
@@ -41,6 +42,7 @@ public:
 
     std::unique_ptr<EdgeDrawing> edgeDrawing;
     std::unique_ptr<DouglasPeucker> douglasPeucker;
+    std::unique_ptr<SaliencyDetection> saliencyDetection;
 
 public:
     ImageController(ImageModel *model,
@@ -55,6 +57,7 @@ public:
 
     void applyEdgeDrawing();
     void applyDouglasPeucker();
+    void applySaliencyDetection();
     // 执行所有图像处理方法
     void applyAllImageProcess();
 

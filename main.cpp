@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     // {
     //     const QString baseName = "TestLowPoly04_" + QLocale(locale).name();
     //     if (translator.load(":/i18n/translation/" + baseName + ".qm"))
-    //     {   //i18n 是 internationalization的缩写
+    //     {   //i18n 是 internationalization
     //         a.installTranslator(&translator);
     //         translation = baseName;
     //         break;

@@ -10,6 +10,7 @@
 #include "algorithm_params.h"
 #include "edge_drawing.h"
 #include "douglas_peucker.h"
+#include "saliency_detection.h"
 
 ImageController::ImageController(ImageModel *model,
                                  ImageWidget *view,
@@ -51,6 +52,7 @@ void ImageController::onImageTypeSelected(int intType)
     ImageModel::ImageType imageType = ImageModel::ImageType::Origin;
     if (intType >= 0 && intType < imageModel->typeToIdx(ImageModel::ImageType::Count))
     {
+        qDebug() << intType;
         imageType = static_cast<ImageModel::ImageType>(intType);
         imageModel->setCurrentImageType(imageType);
     }
@@ -58,6 +60,7 @@ void ImageController::onImageTypeSelected(int intType)
 
 void ImageController::applyAllImageProcess()
 {   // 后续改进: 开启一个工作线程(Worker Thread)执行该函数
+    applySaliencyDetection();
     // 阶段 1: Edge Drawing. 如果当前 ED 没做,则执行它
     if (currentStage < ProcessStage::EdgeDrawingDone)
     {
@@ -90,6 +93,15 @@ void ImageController::applyDouglasPeucker()
     imageModel->setImage(ImageModel::ImageType::DouglasPoint, pointMap);
     QImage lineMap = douglasPeucker->drawLineImage(w, h);
     imageModel->setImage(ImageModel::ImageType::DouglasLine, lineMap);
+}
+
+void ImageController::applySaliencyDetection()
+{
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
+    QImage saliencyMap = saliencyDetection->getSaliencyMap(originImage);
+    imageModel->setImage(ImageModel::ImageType::SaliencyDetection, saliencyMap);
+
+
 }
 
 opencved::EDParams ImageController::getEDParams() const

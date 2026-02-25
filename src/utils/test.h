@@ -9,7 +9,7 @@ public:
     SaliencyDetection salient;
     void testSalient(QImage input)
     {
-        salient.getSaliencyMap(input);
+        QImage result = salient.getSaliencyMap(input);
     }
 
 };

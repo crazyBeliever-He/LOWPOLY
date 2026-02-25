@@ -21,7 +21,7 @@ class SaliencyDetection{
 
 public:
     // 主函数：输入 QImage，输出灰度显著性图
-    static QImage getSaliencyMap(const QImage &input);
+    QImage getSaliencyMap(const QImage &input);
 
 private:
     // 计算两个颜色的欧氏距离

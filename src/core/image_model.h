@@ -17,6 +17,7 @@ public:
         EdgeDrawing,
         DouglasPoint,
         DouglasLine,
+        SaliencyDetection,
         Count
     };
     Q_ENUM(ImageType) // 允许 Qt 元系统识别
