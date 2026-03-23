@@ -3,6 +3,7 @@
 
 #include "algorithm_params.h"
 #include "params_util.h"
+#include "dialogs_factory.h"
 
 DPParamDialog::DPParamDialog(QWidget *parent)
     : BaseDialog(parent)
@@ -50,3 +51,5 @@ DPParamDialog::~DPParamDialog()
 {
     delete ui;
 }
+
+REGISTER_DIALOG(DPParams, DPParamDialog);

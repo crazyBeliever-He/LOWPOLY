@@ -17,8 +17,10 @@ public:
 
 public:
     DouglasPeucker(double epsilon = 1.5, double eta = 0.02);
-    // 输入底层结果, 输出 Qt 坐标点集
+    // 输入edge drawing结果, 获得 Qt 坐标点集
     void simplify(const ScopedEDResults& edResults, int imgW, int imgH);
+    // 获取约束点数量
+    int getDPPointsNumber();
     // 绘制点集
     QImage drawPointImage(int width, int height);
     // 绘制边缘图

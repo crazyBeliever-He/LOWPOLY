@@ -45,9 +45,17 @@ struct ScopedEDResults {
     }
 };
 
+struct SDParams{
+    int type = 0;                   // 使用的显著性检测类型
+    int userN = 0;                  // 用户指定的总采样数 (为0则使用论文公式)
+    double lambda = 0.7;            // 前景密度控制参数
+    uint8_t threshold = 128;        // 区分前景/背景的灰度阈值
+};
+
 // 在编译时声明一个类型，允许该类型与 QVariant 一起使用. 使 QVariant 能够处理该类型.
 Q_DECLARE_METATYPE(opencved::EDParams)
 Q_DECLARE_METATYPE(DPParams)
+Q_DECLARE_METATYPE(SDParams)
 
 // 在运行时将类型注册到 Qt 的元对象系统,允许该类型用于信号槽和跨线程传递.
 // 使得类型能够跨线程或信号槽机制传递, 必须在信号槽、跨线程等使用该类型时调用该方法.

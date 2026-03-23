@@ -3,6 +3,7 @@
 
 #include "edge_drawing_lib.h"
 #include "params_util.h"
+#include "dialogs_factory.h"
 
 EDParamDialog::EDParamDialog(QWidget *parent)
     : BaseDialog(parent)
@@ -73,3 +74,5 @@ EDParamDialog::~EDParamDialog()
 {
     delete ui;
 }
+
+REGISTER_DIALOG(opencved::EDParams, EDParamDialog);

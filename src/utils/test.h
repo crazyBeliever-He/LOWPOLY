@@ -7,9 +7,9 @@ class TestUnit{
 public:
 
     SaliencyDetection salient;
-    void testSalient(QImage input)
+    QImage testSalient(QImage input)
     {
-        salient.getSaliencyMap(input);
+        return salient.getSaliencyDetection(input);
     }
 
 };

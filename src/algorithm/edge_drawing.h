@@ -27,7 +27,7 @@ struct EdgeChain {
 
 class EdgeDrawing
 {
-// --- opencv-contrib edge drawing ---
+// ---------- opencv-contrib edge drawing ----------
 public:
     opencved::EDParams edParams;    // 参数
     ScopedEDResults edResults;  // 结果
@@ -36,7 +36,7 @@ public:
     // 绘制
     QImage drawImage(int width, int height);
 
-// --- my edge drawing ---
+// ---------- my edge drawing ----------
 public:
     enum GrayMethod { METHOD_BT601 = 0, METHOD_BT709, NUM_METHODS };
     enum DataMode { MODE_FLOAT = 0, MODE_GRAY16 };

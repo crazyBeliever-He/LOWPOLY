@@ -10,6 +10,7 @@
 #include "algorithm_params.h"
 #include "edge_drawing.h"
 #include "douglas_peucker.h"
+#include "saliency_detection.h"
 
 ImageController::ImageController(ImageModel *model,
                                  ImageWidget *view,
@@ -26,6 +27,10 @@ ImageController::ImageController(ImageModel *model,
     douglasPeucker = std::make_unique<DouglasPeucker>();
     DPParamsUtil::getDefaultDPParams(douglasPeucker->dpParams);
 
+    // 3. saliency detection 参数初始化
+    saliencyDetection = std::make_unique<SaliencyDetection>();
+    SDParamsUtil::getDefaultSDParams(saliencyDetection->sDParams);
+
     // n. 实现connect
     // 切换源图
     connect(imageModel, &ImageModel::originImageChanged,
@@ -35,11 +40,15 @@ ImageController::ImageController(ImageModel *model,
             imageWidget, &ImageWidget::updateImageKeepView);
 }
 
+ImageController::~ImageController() = default;
+
 void ImageController::onOriginImageChanged(const QImage& img)
 {
     // 重置widget ui
     emit requestUiReset();
     currentStage = ProcessStage::None;
+    // TODO: 某些算法的参数也要重置
+
     // 执行算法
     applyAllImageProcess();
     // 通知 ImageWidget 展示源图
@@ -56,6 +65,9 @@ void ImageController::onImageTypeSelected(int intType)
     }
 }
 
+/********************************************************************************/
+// apply algorithms
+/********************************************************************************/
 void ImageController::applyAllImageProcess()
 {   // 后续改进: 开启一个工作线程(Worker Thread)执行该函数
     // 阶段 1: Edge Drawing. 如果当前 ED 没做,则执行它
@@ -70,6 +82,8 @@ void ImageController::applyAllImageProcess()
         applyDouglasPeucker();
         currentStage = ProcessStage::DouglasPeuckerDone;
     }
+
+    applySaliencyDetection();
 }
 
 void ImageController::applyEdgeDrawing()
@@ -77,7 +91,7 @@ void ImageController::applyEdgeDrawing()
     QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
     edgeDrawing->edgeDrawingInLib(originImage);
     QImage edgeMap = edgeDrawing->drawImage(originImage.width(), originImage.height());
-    imageModel->setImage(ImageModel::ImageType::EdgeDrawing, edgeMap);
+    imageModel->setImage(ImageModel::ImageType::EdgeDrawingA, edgeMap);
 }
 
 void ImageController::applyDouglasPeucker()
@@ -91,14 +105,63 @@ void ImageController::applyDouglasPeucker()
     QImage lineMap = douglasPeucker->drawLineImage(w, h);
     imageModel->setImage(ImageModel::ImageType::DouglasLine, lineMap);
 }
+void ImageController::applySaliencyDetection()
+{
+    QImage ogrigin = imageModel->getImage(ImageModel::ImageType::Origin);
+    QImage result = saliencyDetection->saliencyDetectionInterface(ogrigin);
+    imageModel->setImage(ImageModel::ImageType::SaliencyDetectionA, result);
+}
+/********************************************************************************/
+// get/set params from dialogs
+/********************************************************************************/
+QVariant ImageController::getParams(const QString& typeName) const
+{
+    // 在这里维护类型映射    comtroller -> dialogs
+    if (typeName == QMetaType::fromType<opencved::EDParams>().name())
+        return QVariant::fromValue(edgeDrawing->edParams);
+    else if (typeName == QMetaType::fromType<DPParams>().name())
+        return QVariant::fromValue(douglasPeucker->dpParams);
+    else if (typeName == QMetaType::fromType<SDParams>().name())
+        return QVariant::fromValue(saliencyDetection->sDParams);
+    return QVariant();
+}
+
+void ImageController::setParams(const QString& typeName, const QVariant& data)
+{
+    // 在这里维护类型映射    dialogs -> controller
+    bool success = true;
+    QString feedbackMsg = tr("Success");
+
+    try {
+        if (typeName == QMetaType::fromType<opencved::EDParams>().name()) {
+            setEDParams(data.value<opencved::EDParams>());
+        }
+        else if (typeName == QMetaType::fromType<DPParams>().name()) {
+            setDPParams(data.value<DPParams>());
+        }
+        else if(typeName == QMetaType::fromType<SDParams>().name()){
+            setSDParams(data.value<SDParams>());
+        }
+        else {
+            success = false;
+            feedbackMsg = tr("Unknown parameter type");
+        }
+    } catch (...) {
+        // 如果底层算法抛出异常，这里可以捕获
+        success = false;
+        feedbackMsg = tr("Algorithm execution failed");
+    }
+
+    //如果未来 setEDParams 内部把任务丢给了工作线程, 可以等工作线程的 finished 信号触发后, 再发出 paramsApplyFinished 信号
+    // 无论成功还是失败，都把结果发射出去
+    emit paramsApplyFinished(typeName, success, feedbackMsg);
+}
 
 opencved::EDParams ImageController::getEDParams() const
 {
     return edgeDrawing->edParams;
 }
-
-void ImageController::setEDParams(const opencved::EDParams& newParams)
-{
+void ImageController::setEDParams(const opencved::EDParams& newParams){
     if (!EDParamsUtil::compareEDParams(edgeDrawing->edParams, newParams))
     {   // ED 参数变了，当前进度重置为 None
         edgeDrawing->edParams = newParams;
@@ -123,6 +186,20 @@ void ImageController::setDPParams(const DPParams& newParams)
             currentStage = ProcessStage::EdgeDrawingDone;
             applyAllImageProcess();
         }
+    }
+}
+
+SDParams ImageController::getSDParams() const
+{
+    return saliencyDetection->sDParams;
+}
+void ImageController::setSDParams(const SDParams& newParams)
+{
+    if (!SDParamsUtil::compareSDParams(saliencyDetection->sDParams, newParams))
+    {
+        saliencyDetection->sDParams = newParams;
+        // 显著性检测独立于 edge drawing 和 douglas peucker, 直接重新应用即可
+        applySaliencyDetection();
     }
 }
 
@@ -175,5 +252,3 @@ void ImageController::onSaveImage(QWidget *parent)
     }
     emit errorOccurred(tr("Failed to save image to: ") + path);
 }
-
-ImageController::~ImageController() = default;

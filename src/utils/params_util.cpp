@@ -2,6 +2,9 @@
 
 #include <QCoreApplication>
 
+/********************************************************************************/
+// edge drawing params
+/********************************************************************************/
 bool EDParamsUtil::validateEDParams(const opencved::EDParams& params, QString& errorMessage)
 {
     errorMessage = "";
@@ -145,9 +148,9 @@ bool EDParamsUtil::compareEDParams(const opencved::EDParams &params1, const open
            params1.SumFlag == params2.SumFlag &&
            params1.NFAValidation == params2.NFAValidation &&
            params1.MinLineLength == params2.MinLineLength &&
-           params1.MaxDistanceBetweenTwoLines == params2.MaxDistanceBetweenTwoLines &&
-           params1.LineFitErrorThreshold == params2.LineFitErrorThreshold &&
-           params1.MaxErrorThreshold == params2.MaxErrorThreshold;
+           params_util::isEqual(params1.MaxDistanceBetweenTwoLines, params2.MaxDistanceBetweenTwoLines) &&
+           params_util::isEqual(params1.LineFitErrorThreshold, params2.LineFitErrorThreshold) &&
+           params_util::isEqual(params1.MaxErrorThreshold, params2.MaxErrorThreshold);
 }
 
 void EDParamsUtil::getDefaultEDParams(opencved::EDParams &p)
@@ -166,7 +169,9 @@ void EDParamsUtil::getDefaultEDParams(opencved::EDParams &p)
     p.LineFitErrorThreshold = 1.0;
     p.MaxErrorThreshold = 1.3;
 }
-
+/********************************************************************************/
+// douglas peucker params
+/********************************************************************************/
 bool DPParamsUtil::validateDPParams(const DPParams &params, QString &errorMessage)
 {
     errorMessage = "";
@@ -211,12 +216,57 @@ void DPParamsUtil::setDPParams(DPParams &params, double epsilon, double eta)
 
 bool DPParamsUtil::compareDPParams(const DPParams &params1, const DPParams &params2)
 {
-    return params1.epsilon == params2.epsilon &&
-           params1.eta == params2.eta;
+    return params_util::isEqual(params1.epsilon, params2.epsilon) &&
+           params_util::isEqual(params1.eta, params2.eta);
 }
 
 void DPParamsUtil::getDefaultDPParams(DPParams &p)
 {
     p.epsilon = 1.5;
     p.eta = 0.02;
+}
+/********************************************************************************/
+// saliency detection params
+/********************************************************************************/
+bool SDParamsUtil::validateSDParams(const SDParams &params, QString &errorMessage)
+{
+    errorMessage = "";
+    bool isValid = true;
+
+    // QComboBox 的索引应该是
+    if (params.type < 0 || params.type > 2) {
+        errorMessage += QCoreApplication::translate("SDParamsUtil",
+                                                    "Error: Invalid Saliency Detection Type.\n");
+        isValid = false;
+    }
+
+    return isValid;
+}
+
+void SDParamsUtil::setSDParams(SDParams &params,
+                               int type,
+                               int userN,
+                               double lambda,
+                               uint8_t threshold)
+{
+    params.type = type;
+    params.userN = userN;
+    params.lambda = lambda;
+    params.threshold = threshold;
+}
+
+bool SDParamsUtil::compareSDParams(const SDParams &params1, const SDParams &params2)
+{
+    return params1.type == params2.type &&
+        params_util::isEqual(params1.lambda, params2.lambda) &&
+        params1.threshold == params2.threshold &&
+        params1.userN == params2.userN;
+}
+
+void SDParamsUtil::getDefaultSDParams(SDParams &p)
+{
+    p.type = 0;         // 默认选中第一个选项 "type1"
+    p.lambda = 0.7;
+    p.threshold = 128;
+    p.userN = 0;        // 用户指定的总采样数 (为0则使用论文公式)
 }

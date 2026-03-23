@@ -45,7 +45,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/ui/edge_drawing_dialog.ui
         src/utils/params_util.h
         src/utils/params_util.cpp
-        exlib/edge_drawing_lib.h
         src/algorithm/douglas_peucker.h
         src/algorithm/douglas_peucker.cpp
         src/ui/douglas_peucker_dialog.h
@@ -56,8 +55,16 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/algorithm/edge_drawing.cpp
         src/algorithm/saliency_detection.h
         src/algorithm/saliency_detection.cpp
+
+        exlib/edge_drawing/edge_drawing_lib.h
+        exlib/saliency/saliency_api.h
+
         src/utils/test.h
         src/utils/test.cpp
+        src/ui/dialogs_factory.h
+        src/ui/saliency_detection_dialog.h
+        src/ui/saliency_detection_dialog.cpp
+        src/ui/saliency_detection_dialog.ui
 
 
     )
@@ -94,11 +101,20 @@ target_include_directories(TestLowPoly04 PRIVATE
     ${SRC_DIR}/algorithm
     ${SRC_DIR}/utils
     ${CMAKE_SOURCE_DIR}/exlib
+    ${CMAKE_SOURCE_DIR}/exlib/edge_drawing
+    ${CMAKE_SOURCE_DIR}/exlib/saliency
 )
 
 target_link_libraries(TestLowPoly04 PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
-    "${CMAKE_CURRENT_SOURCE_DIR}/exlib/Dll2.lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/exlib/edge_drawing/edge_drawing_lib.lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/exlib/saliency/SaliencyICCV13.lib"
+)
+# =====================================================================
+# 将 CMake 的源码根目录路径作为宏 (PROJECT_SOURCE_DIR) 注入到 C++ 中
+# =====================================================================
+target_compile_definitions(TestLowPoly04 PRIVATE
+    PROJECT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 # # cuda external library
@@ -136,3 +152,23 @@ install(TARGETS TestLowPoly04
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(TestLowPoly04)
 endif()
+
+
+
+#[[# =====================================================================
+# 自动拷贝 exlib 目录下的所有 .dll 文件到可执行文件同级目录
+# =====================================================================
+
+# 1. 递归查找 exlib 文件夹（包含子文件夹）下的所有 .dll 文件
+file(GLOB_RECURSE EXLIB_DLLS "${CMAKE_CURRENT_SOURCE_DIR}/exlib/*.dll")
+
+# 2. 遍历找到的每一个 .dll 文件
+foreach(DLL_FILE IN LISTS EXLIB_DLLS)
+    # 3. 添加一个构建后的自定义命令 (POST_BUILD)
+    add_custom_command(TARGET TestLowPoly04 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${DLL_FILE}"
+        "$<TARGET_FILE_DIR:TestLowPoly04>"
+        COMMENT "正在拷贝外部依赖: ${DLL_FILE} 到输出目录..."
+    )
+endforeach()]]

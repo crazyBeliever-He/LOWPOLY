@@ -5,12 +5,12 @@
 #include <QMessageBox>
 #include <QMetaType>
 
+#include "logger.h"
 #include "image_widget.h"       // 图像显示
 #include "image_model.h"        // 数据
 #include "image_controller.h"   // 业务逻辑
 #include "algorithm_params.h"       // 业务需要的结构体
-#include "edge_drawing_dialog.h"    // edge drawing 算法参数窗口
-#include "douglas_peucker_dialog.h" // douglas peucker 算法参数窗口
+#include "dialogs_factory.h"
 
 // 实现依赖（Implementation Dependency）放在 .cpp
 
@@ -85,6 +85,12 @@ void Widget::initSettingBtnInMenu()
     connect(dpParamAction, &QAction::triggered, this, [this](){
         openDialog<DPParams>(tr("Douglas Peucker Params"));
     });
+
+    // 4. saliency detection 参数设置
+    QAction *sdParamAction = settingMenu->addAction(tr("Saliency Detection Settings"));
+    connect(sdParamAction, &QAction::triggered, this, [this](){
+        openDialog<SDParams>(tr("Saliency Detection Params"));
+    });
 }
 
 template<typename T>
@@ -95,42 +101,43 @@ void Widget::openDialog(const QString& title)
     // 1. 懒加载：如果没创建过，则根据类型创建
     if (!dialogMap.contains(typeName))
     {
-        BaseDialog* dialog = nullptr;
-        if (typeName == "opencved::EDParams") dialog = new EDParamDialog(this);
-        else if (typeName == "DPParams") dialog = new DPParamDialog(this);
-
+        BaseDialog* dialog = DialogFactory::instance().createDialog(typeName, this);
         if (dialog)
         {
             dialog->setWindowTitle(title);
             dialogMap[typeName] = dialog;
-            // 连接通路 1
-            connect(dialog, &BaseDialog::dataSubmitted, this, &Widget::handleDialogData);
+            // 闭包捕获 typeName，盲目地将 Dialog 提交的 QVariant 塞给 Controller
+            connect(dialog, &BaseDialog::dataSubmitted, this, [this, typeName](const QVariant& data) {
+                imageController->setParams(typeName, data);
+            });
+        }
+        else
+        {
+            LOG_ERROR << typeName << " Not Registered" ;
+            return;
         }
     }
 
     // 2. 从 Controller 获取当前最新数据并存入 Dialog
     BaseDialog* dialog = dialogMap[typeName];
-    if (typeName == "opencved::EDParams")
-        dialog->setData(QVariant::fromValue(imageController->getEDParams()));
-    else if (typeName == "DPParams")
-        dialog->setData(QVariant::fromValue(imageController->getDPParams()));
+    dialog->setData(imageController->getParams(typeName));
 
     dialog->show();
     dialog->raise();
 }
 
-void Widget::handleDialogData(const QVariant &data)
-{
-    // 根据 data 存储的实际类型进行分发
-    if (data.canConvert<opencved::EDParams>())
-    {
-        imageController->setEDParams(data.value<opencved::EDParams>());
-    }
-    else if (data.canConvert<DPParams>())
-    {
-        imageController->setDPParams(data.value<DPParams>());
-    }
-}
+// void Widget::handleDialogData(const QVariant &data)
+// {
+//     // 根据 data 存储的实际类型进行分发
+//     if (data.canConvert<opencved::EDParams>())
+//     {
+//         imageController->setEDParams(data.value<opencved::EDParams>());
+//     }
+//     else if (data.canConvert<DPParams>())
+//     {
+//         imageController->setDPParams(data.value<DPParams>());
+//     }
+// }
 
 void Widget::initContentWidget()
 {
@@ -151,6 +158,20 @@ void Widget::initStatusWidget()
     // 连接报错和状态信息
     connect(imageController, &ImageController::errorOccurred, this, &Widget::onShowErrorMessage);
     connect(imageController, &ImageController::statusMessage, this, &Widget::onShowStatusMessage);
+
+    // Widget 监听 ImageController 的信号, 然后根据 typeName 去 dialogMap 里找对应的窗口,把结果塞进去
+    connect(imageController, &ImageController::paramsApplyFinished,
+            this, [this](const QString& typeName, bool success, const QString& msg) {
+                // 如果字典里有这个类型的 Dialog 实例
+                if (dialogMap.contains(typeName)) {
+                    BaseDialog* dialog = dialogMap[typeName];
+                    // 把结果传递给 Dialog
+                    dialog->receiveSubmissionFeedback(success, msg);
+
+                    // 可选：如果成功了, 可以在这里统一决定是否自动隐藏 Dialog
+                    // if (success) dialog->hide();
+                }
+            });
 }
 
 void Widget::onShowErrorMessage(const QString &msg)

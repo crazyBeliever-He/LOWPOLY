@@ -2,12 +2,15 @@
 #define DOUGLAS_PEUCKER_DIALOG_H
 
 #include "base_dialog.h"
+#include "algorithm_params.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class DPParamDialog;
 }
 QT_END_NAMESPACE
+
+
 
 class DPParamDialog : public BaseDialog
 {
@@ -31,6 +34,12 @@ protected:
 
 private:
     Ui::DPParamDialog *ui;
+};
+
+// 注册 Traits，绑定数据结构和 UI 窗口
+template <>
+struct DialogTraits<DPParams> {
+    using DialogType = DPParamDialog;
 };
 
 #endif // DOUGLAS_PEUCKER_DIALOG_H

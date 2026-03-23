@@ -449,12 +449,32 @@ QPushButton:hover, QToolButton:hover {
          </item>
          <item>
           <property name="text">
+           <string>edge drawing line 2</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
            <string>douglas peucker point</string>
           </property>
          </item>
          <item>
           <property name="text">
            <string>douglas peucker line</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>saliency detection 1</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>saliency detection 2</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>test</string>
           </property>
          </item>
         </widget>

@@ -2,6 +2,7 @@
 #define EDGE_DRAWING_DIALOG_H
 
 #include "base_dialog.h"
+#include "edge_drawing_lib.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -32,5 +33,12 @@ protected:
 private:
     Ui::EDParamDialog *ui;
 };
+
+// 注册 Traits，绑定数据结构和 UI 窗口
+template <>
+struct DialogTraits<opencved::EDParams>{
+    using DialogType = EDParamDialog;
+};
+
 
 #endif // EDGE_DRAWING_DIALOG_H

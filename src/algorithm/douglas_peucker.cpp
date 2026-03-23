@@ -32,7 +32,7 @@ void DouglasPeucker::simplify(const ScopedEDResults& edResults, int width, int h
 // --- 选择编译逻辑开始 ---
 #define USE_ZERO_COPY_OPTIMIZATION 1
 // 优先使用const opencved::EDPoint* points.
-// 当: 异步处理或多线程, 数据需要频繁"原地修改", 数据持久化需求. 使用const std::vector<QPoint>& segment
+// 当: 异步处理或多线程, 数据需要频繁"原地修改", 数据持久化需求. 使用情况B: const std::vector<QPoint>& segment
 #if USE_ZERO_COPY_OPTIMIZATION
         // 情况 A: 原始指针版本 - 追求极致性能，零拷贝
         processSegment(seg.points, 0, seg.count - 1, keptIndices);
@@ -70,6 +70,15 @@ void DouglasPeucker::simplify(const ScopedEDResults& edResults, int width, int h
     cornerPoints.push_back(QPoint(width - 1, 0));
     cornerPoints.push_back(QPoint(0, height - 1));
     cornerPoints.push_back(QPoint(width - 1, height - 1));
+}
+
+int DouglasPeucker::getDPPointsNumber()
+{
+    int Nc = 4;
+    for (const auto& line : dpResults) {
+        Nc += static_cast<int>(line.size());
+    }
+    return Nc;
 }
 
 void DouglasPeucker::processSegment(const std::vector<QPoint>& segment,

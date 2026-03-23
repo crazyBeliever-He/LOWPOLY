@@ -7,9 +7,23 @@
 #include <QLabel>
 #include <QMessageBox>
 
+// 在全局作用域仅仅声明基础模板，不包含具体类型
+template <typename T>
+struct DialogTraits;
+
 // ---------------------------------------------------------
 // 抽象基类 BaseDialog
 // ---------------------------------------------------------
+
+/********************************************************************************/
+// params的非阻塞(异步友好)数据流转回路
+// [发起] ParamDialog 用户点击确认 -> 发出 dataSubmitted(QVariant)
+// [路由] Widget (Lambda 截获) -> 附带上 "Params" 标签 ->️ 调用 Controller::setParams
+// [执行] ImageController 解析数据 ->️ 更新状态 ->️ 执行图像处理
+// [广播] ImageController ->️ 发出 paramsApplyFinished("Params", true, "成功")
+// [终点] Widget 监听到信号 ->️️ 查字典找到 DPParamDialog ->️️ 调用它的 receiveSubmissionFeedback 更新 UI。
+/********************************************************************************/
+
 class BaseDialog : public QDialog
 {
     Q_OBJECT
@@ -19,6 +33,12 @@ private:
 
 public:
     explicit BaseDialog(QWidget *parent = nullptr) : QDialog(parent){}
+    // 提供给 Widget 调用的公共接口
+    void receiveSubmissionFeedback(bool success, const QString &message)
+    {
+        // 内部调用子类实现的受保护的虚函数
+        onSubmissionResult(success, message);
+    }
     virtual ~BaseDialog() {}
 signals:
     void dataSubmitted(const QVariant &data);

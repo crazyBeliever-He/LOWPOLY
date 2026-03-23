@@ -22,6 +22,7 @@ class ImageModel;
 class ImageWidget;
 class EdgeDrawing;
 class DouglasPeucker;
+class SaliencyDetection;
 
 class ImageController : public QObject
 {
@@ -41,6 +42,7 @@ public:
 
     std::unique_ptr<EdgeDrawing> edgeDrawing;
     std::unique_ptr<DouglasPeucker> douglasPeucker;
+    std::unique_ptr<SaliencyDetection> saliencyDetection;
 
 public:
     ImageController(ImageModel *model,
@@ -48,13 +50,20 @@ public:
                     QObject *parent = nullptr);
     ~ImageController();
 
+    // 统一的数据存取接口
+    QVariant getParams(const QString& typeName) const;
+    void setParams(const QString& typeName, const QVariant& data);
+
     void setEDParams(const opencved::EDParams& newParams);
     opencved::EDParams getEDParams() const;
     void setDPParams(const DPParams& newParams);
     DPParams getDPParams() const;   // 因为返回的是值(Value)，编译器需要 algorithm_params.h 里的结构体定义
+    void setSDParams(const SDParams& newParams);
+    SDParams getSDParams() const;
 
     void applyEdgeDrawing();
     void applyDouglasPeucker();
+    void applySaliencyDetection();
     // 执行所有图像处理方法
     void applyAllImageProcess();
 
@@ -71,6 +80,8 @@ signals:
     void statusMessage(const QString &message);
     // 请求重置ui的一些设置
     void requestUiReset();
+    // 向外界反馈特定类型的参数应用结果
+    void paramsApplyFinished(const QString& typeName, bool success, const QString& message);
     //void displayTypeRequested(ImageModel::ImageType type);
 };
 
