@@ -9,6 +9,7 @@ public:
     SaliencyDetection salient;
     QImage testSalient(QImage input)
     {
+
         return salient.getSaliencyDetection(input);
     }
 

@@ -46,7 +46,12 @@ public:
 //----------简化版 saliency detection----------
 public:
     // 主函数：输入 QImage，输出灰度显著性图
+<<<<<<< HEAD
     static QImage getSaliencyDetection(const QImage &input);
+=======
+    QImage getSaliencyMap(const QImage &input);
+
+>>>>>>> 98037d2ee1220cb1898bb5f8f32ccadace237c3b
 private:
     // 计算两个颜色的欧氏距离
     static float colorDist(const ColorBin &c1, const ColorBin &c2);

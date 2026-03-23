@@ -60,6 +60,7 @@ void ImageController::onImageTypeSelected(int intType)
     ImageModel::ImageType imageType = ImageModel::ImageType::Origin;
     if (intType >= 0 && intType < imageModel->typeToIdx(ImageModel::ImageType::Count))
     {
+        qDebug() << intType;
         imageType = static_cast<ImageModel::ImageType>(intType);
         imageModel->setCurrentImageType(imageType);
     }
@@ -70,6 +71,7 @@ void ImageController::onImageTypeSelected(int intType)
 /********************************************************************************/
 void ImageController::applyAllImageProcess()
 {   // 后续改进: 开启一个工作线程(Worker Thread)执行该函数
+    applySaliencyDetection();
     // 阶段 1: Edge Drawing. 如果当前 ED 没做,则执行它
     if (currentStage < ProcessStage::EdgeDrawingDone)
     {
@@ -155,6 +157,15 @@ void ImageController::setParams(const QString& typeName, const QVariant& data)
     //如果未来 setEDParams 内部把任务丢给了工作线程, 可以等工作线程的 finished 信号触发后, 再发出 paramsApplyFinished 信号
     // 无论成功还是失败，都把结果发射出去
     emit paramsApplyFinished(typeName, success, feedbackMsg);
+}
+
+void ImageController::applySaliencyDetection()
+{
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
+    QImage saliencyMap = saliencyDetection->getSaliencyMap(originImage);
+    imageModel->setImage(ImageModel::ImageType::SaliencyDetection, saliencyMap);
+
+
 }
 
 opencved::EDParams ImageController::getEDParams() const

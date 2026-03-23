@@ -185,26 +185,30 @@ void Widget::onShowStatusMessage(const QString &msg)
 }
 
 void Widget::onShowAboutProgram()
-{
-    QMessageBox::information(this,
-                             "About Program",
-                             "This program is a demo for image processing.\n"
-                             "Version 0.1");
+{//Qt 提供的静态函数 QMessageBox::about
+    // 1. 使用 static 函数，一行代码搞定创建和销毁。
+    // 2. 使用 HTML 标签 <h3> 加粗加大标题，<p> 控制段落。
+    // 3. style='color: gray;' 让版本号这种次要信息稍微淡一点，增加层次感。
+    QString content = R"(
+        <div style='text-align: center;'>
+            <h3>Image Processing Demo</h3>
+            <p>A lightweight tool for image manipulation.</p>
+            <p style='color: gray; font-size: 12px;'>Version 0.1</p>
+        </div>
+    )";
+    QMessageBox::about(this, tr("About Program"), content);
 }
 
 void Widget::onShowAboutAuthor()
-{
-    // 带有超链接的HTML内容
-    QString aboutText = "<div style=\"text-align: center;\">"
-                        "Program developed by: crazyBeliever_he<br>"
-                        "<a href=\"https://github.com/crazyBeliever-He\">Auther GitHub</a>.<br>"
-                        "</div>";
-    QMessageBox msgBox(this);
-    msgBox.setWindowTitle("About Auther");
-    msgBox.setText(aboutText);
-    // 设置消息框的文本格式为 RichText，这样可以支持 HTML 格式
-    msgBox.setTextFormat(Qt::RichText);
-    msgBox.exec();
+{//C++11 的 Raw String Literal (R"(...)"), 好用,多用
+    QString content = R"(
+        <div style='text-align: center;'>
+            <p>Program developed by:</p>
+            <h3>crazyBeliever_he</h3>
+            <p><a href='https://github.com/crazyBeliever-He' style='text-decoration: none; color: #0078d7;'>Visit GitHub Repository</a></p>
+        </div>
+    )";
+    QMessageBox::about(this, tr("About Author"), content);
 }
 
 Widget::~Widget()
