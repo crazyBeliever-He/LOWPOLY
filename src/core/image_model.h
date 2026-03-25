@@ -14,17 +14,13 @@ class ImageModel : public QObject
 public:
     enum class ImageType {
         Origin = 0,
-        EdgeDrawingA,
-        EdgeDrawingB,
+        EdgeDrawing,
         DouglasPoint,
         DouglasLine,
-<<<<<<< HEAD
-        SaliencyDetectionA,
-        SaliencyDetectionB,
-        Test,
-=======
         SaliencyDetection,
->>>>>>> 98037d2ee1220cb1898bb5f8f32ccadace237c3b
+        JumpFlooding,
+        FeatureFlow,
+        Test,
         Count
     };
     Q_ENUM(ImageType) // 允许 Qt 元系统识别

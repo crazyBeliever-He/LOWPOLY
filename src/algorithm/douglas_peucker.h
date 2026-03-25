@@ -5,6 +5,12 @@
 #include <vector>
 #include "algorithm_params.h"
 
+/********************************************************************************/
+// Hershberger J, Snoeyink J.
+// An O (n log n) implementation of the Douglas-Peucker algorithm for line simplification[C]
+// Proceedings of the tenth annual symposium on Computational geometry. 1994: 383-384.
+/********************************************************************************/
+
 // 曲线简化算法, 采疏
 class DouglasPeucker
 {

@@ -58,6 +58,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
         exlib/edge_drawing/edge_drawing_lib.h
         exlib/saliency/saliency_api.h
+        exlib/JFA_FF/JumpFlooding_FeatureFlow.h
 
         src/utils/test.h
         src/utils/test.cpp
@@ -65,6 +66,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/ui/saliency_detection_dialog.h
         src/ui/saliency_detection_dialog.cpp
         src/ui/saliency_detection_dialog.ui
+        src/algorithm/jump_flooding.h
+        src/algorithm/jump_flooding.cpp
 
 
     )
@@ -103,12 +106,14 @@ target_include_directories(TestLowPoly04 PRIVATE
     ${CMAKE_SOURCE_DIR}/exlib
     ${CMAKE_SOURCE_DIR}/exlib/edge_drawing
     ${CMAKE_SOURCE_DIR}/exlib/saliency
+    ${CMAKE_SOURCE_DIR}/exlib/JFA_FF
 )
 
 target_link_libraries(TestLowPoly04 PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     "${CMAKE_CURRENT_SOURCE_DIR}/exlib/edge_drawing/edge_drawing_lib.lib"
     "${CMAKE_CURRENT_SOURCE_DIR}/exlib/saliency/SaliencyICCV13.lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/exlib/JFA_FF/JumpFlooding_FeatureFlow.lib"
 )
 # =====================================================================
 # 将 CMake 的源码根目录路径作为宏 (PROJECT_SOURCE_DIR) 注入到 C++ 中

@@ -6,6 +6,13 @@
 
 #include "logger.h"
 void test();
+
+/********************************************************************************/
+// Gai M, Wang G.
+// Artistic low poly rendering for images[J].
+// The visual computer, 2016, 32(4): 491-500.
+/********************************************************************************/
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);

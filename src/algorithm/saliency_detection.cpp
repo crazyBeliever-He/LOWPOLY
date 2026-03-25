@@ -33,7 +33,9 @@ QImage SaliencyDetection::saliencyDetectionInterface(const QImage &input)
     }
 }
 
-// ----------------------------------------------------------------------------------------------------
+/********************************************************************************/
+// saliency detection simplified version
+/********************************************************************************/
 
 // 辅助函数：将 RGB 量化为索引 key
 // 论文中提到将每个通道分为 12 份
@@ -189,8 +191,11 @@ QImage SaliencyDetection::getSaliencyDetection(const QImage &input)
     return result;
 }
 
-// ----------------------------------------------------------------------------------------------------
+/********************************************************************************/
+// saliency detection from paper auther
+/********************************************************************************/
 
+// saliency detection by dll
 QImage SaliencyDetection::saliencyDetectionApi(const QImage &input)
 {
     if (input.isNull()) return QImage();
@@ -234,6 +239,7 @@ QImage SaliencyDetection::saliencyDetectionApi(const QImage &input)
     }
 }
 
+// saliency detection by exe
 QImage SaliencyDetection::saliencyDetectionExe(const QImage &input)
 {
     if (input.isNull()) return QImage();
@@ -320,8 +326,11 @@ QImage SaliencyDetection::saliencyDetectionExe(const QImage &input)
     }
 }
 
-// ----------------------------------------------------------------------------------------------------
+/********************************************************************************/
+// generate nonuniform samples
+/********************************************************************************/
 
+// generate external nonuniform samples
 std::vector<QPoint> SaliencyDetection::generateNonUniformSamples(
     int Lw, int Lh,                 // 图像宽高
     int Nc,                         // 已知约束点数量(特征点 + 4个角点)

@@ -637,8 +637,11 @@ QImage EdgeDrawing::drawEdgeChains(int width, int height, const std::vector<Edge
     return result;
 }
 
-// ----------------------------------------------------------------------------------------------------
+/********************************************************************************/
+// edge drawing from opencv
+/********************************************************************************/
 
+// edge drawing form opencv contrib
 void EdgeDrawing::edgeDrawingInLib(const QImage &originalImage)
 {
     QImage workImage;

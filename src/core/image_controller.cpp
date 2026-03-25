@@ -11,6 +11,7 @@
 #include "edge_drawing.h"
 #include "douglas_peucker.h"
 #include "saliency_detection.h"
+#include "jump_flooding.h"
 
 ImageController::ImageController(ImageModel *model,
                                  ImageWidget *view,
@@ -30,6 +31,9 @@ ImageController::ImageController(ImageModel *model,
     // 3. saliency detection 参数初始化
     saliencyDetection = std::make_unique<SaliencyDetection>();
     SDParamsUtil::getDefaultSDParams(saliencyDetection->sDParams);
+
+    // 4. jump flooding 和 feature flow 参数初始化
+    jumpFlooding = std::make_unique<JumpFlooding>();
 
     // n. 实现connect
     // 切换源图
@@ -60,7 +64,7 @@ void ImageController::onImageTypeSelected(int intType)
     ImageModel::ImageType imageType = ImageModel::ImageType::Origin;
     if (intType >= 0 && intType < imageModel->typeToIdx(ImageModel::ImageType::Count))
     {
-        qDebug() << intType;
+        //qDebug() << intType;
         imageType = static_cast<ImageModel::ImageType>(intType);
         imageModel->setCurrentImageType(imageType);
     }
@@ -69,6 +73,8 @@ void ImageController::onImageTypeSelected(int intType)
 /********************************************************************************/
 // apply algorithms
 /********************************************************************************/
+
+// apply alogrithms
 void ImageController::applyAllImageProcess()
 {   // 后续改进: 开启一个工作线程(Worker Thread)执行该函数
     applySaliencyDetection();
@@ -86,6 +92,7 @@ void ImageController::applyAllImageProcess()
     }
 
     applySaliencyDetection();
+    applyJumpFloodingAndFeatureFlow();
 }
 
 void ImageController::applyEdgeDrawing()
@@ -93,7 +100,7 @@ void ImageController::applyEdgeDrawing()
     QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
     edgeDrawing->edgeDrawingInLib(originImage);
     QImage edgeMap = edgeDrawing->drawImage(originImage.width(), originImage.height());
-    imageModel->setImage(ImageModel::ImageType::EdgeDrawingA, edgeMap);
+    imageModel->setImage(ImageModel::ImageType::EdgeDrawing, edgeMap);
 }
 
 void ImageController::applyDouglasPeucker()
@@ -109,13 +116,39 @@ void ImageController::applyDouglasPeucker()
 }
 void ImageController::applySaliencyDetection()
 {
-    QImage ogrigin = imageModel->getImage(ImageModel::ImageType::Origin);
-    QImage result = saliencyDetection->saliencyDetectionInterface(ogrigin);
-    imageModel->setImage(ImageModel::ImageType::SaliencyDetectionA, result);
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
+    QImage result = saliencyDetection->saliencyDetectionInterface(originImage);
+    imageModel->setImage(ImageModel::ImageType::SaliencyDetection, result);
+}
+void ImageController::applyJumpFloodingAndFeatureFlow()
+{
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
+    int w = originImage.width();
+    int h = originImage.height();
+    bool successJFA =  jumpFlooding->jumpFloodingCUDAApi(edgeDrawing->edResults,w,h);
+    if(!successJFA)
+    {
+        //TODO: 调用非cuda版本
+    }
+    QImage resultJFA = jumpFlooding->drawJFAMap(w,h,jumpFlooding->jFCUDAResults,edgeDrawing->edResults);
+    imageModel->setImage(ImageModel::ImageType::JumpFlooding, resultJFA);
+
+    float Li = douglasPeucker->dpParams.eta*(w+h);
+    bool successFF = jumpFlooding->featureFlowCUDAApi(jumpFlooding->jFCUDAResults,w,h,Li);
+    if(!successFF)
+    {
+        //TODO: 调用非cuda版本
+    }
+    QImage resultFF = jumpFlooding->drawFeatureFlowMap(w,h,jumpFlooding->fFCUDAResults);
+    imageModel->setImage(ImageModel::ImageType::FeatureFlow, resultFF);
+
+
 }
 /********************************************************************************/
 // get/set params from dialogs
 /********************************************************************************/
+
+// get params uniform inerface
 QVariant ImageController::getParams(const QString& typeName) const
 {
     // 在这里维护类型映射    comtroller -> dialogs
@@ -128,6 +161,7 @@ QVariant ImageController::getParams(const QString& typeName) const
     return QVariant();
 }
 
+// set params uniform inerface
 void ImageController::setParams(const QString& typeName, const QVariant& data)
 {
     // 在这里维护类型映射    dialogs -> controller
@@ -157,15 +191,6 @@ void ImageController::setParams(const QString& typeName, const QVariant& data)
     //如果未来 setEDParams 内部把任务丢给了工作线程, 可以等工作线程的 finished 信号触发后, 再发出 paramsApplyFinished 信号
     // 无论成功还是失败，都把结果发射出去
     emit paramsApplyFinished(typeName, success, feedbackMsg);
-}
-
-void ImageController::applySaliencyDetection()
-{
-    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
-    QImage saliencyMap = saliencyDetection->getSaliencyMap(originImage);
-    imageModel->setImage(ImageModel::ImageType::SaliencyDetection, saliencyMap);
-
-
 }
 
 opencved::EDParams ImageController::getEDParams() const
@@ -219,6 +244,11 @@ void ImageController::onAutoSize(bool isAuto)
     imageWidget->autoSize = isAuto;
 }
 
+/********************************************************************************/
+// open/save image
+/********************************************************************************/
+
+// open&load image from sotrage
 void ImageController::onOpenImage(QWidget *parent)
 {
     QString path = QFileDialog::getOpenFileName(parent,
@@ -239,6 +269,7 @@ void ImageController::onOpenImage(QWidget *parent)
     emit errorOccurred(tr("Failed to load image from: ") + path);
 }
 
+// save image to storage
 void ImageController::onSaveImage(QWidget *parent)
 {
     if (imageModel->getcurrentImage().isNull())

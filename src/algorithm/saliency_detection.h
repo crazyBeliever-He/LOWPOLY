@@ -17,12 +17,14 @@ struct ColorBin {
     ColorBin() : r(0), g(0), b(0), probability(0), saliency(0),
         sumX(0), sumY(0), sumX2(0), sumY2(0), count(0) {}
 };
+
 /********************************************************************************/
-// M. -M. Cheng, N. J. Mitra, X. Huang, P. H. S. Torr and S. -M. Hu,
-// "Global Contrast Based Salient Region Detection,"
-// in IEEE Transactions on Pattern Analysis and Machine Intelligence,
-// vol. 37, no. 3, pp. 569-582, 1 March 2015, doi: 10.1109/TPAMI.2014.2345401.
+// Zhu W, Liang S, Wei Y, et al.
+// Saliency optimization from robust background detection[C]
+// Proceedings of the IEEE conference on computer vision and pattern recognition. 2014: 2814-2821.
 /********************************************************************************/
+
+//
 class SaliencyDetection
 {
 public:
@@ -41,17 +43,12 @@ public:
 
 //----------论文作者提供版saliency detection----------
 public:
-    static QImage saliencyDetectionApi(const QImage &input);
+    QImage saliencyDetectionApi(const QImage &input);
     QImage saliencyDetectionExe(const QImage &input);
 //----------简化版 saliency detection----------
 public:
     // 主函数：输入 QImage，输出灰度显著性图
-<<<<<<< HEAD
     static QImage getSaliencyDetection(const QImage &input);
-=======
-    QImage getSaliencyMap(const QImage &input);
-
->>>>>>> 98037d2ee1220cb1898bb5f8f32ccadace237c3b
 private:
     // 计算两个颜色的欧氏距离
     static float colorDist(const ColorBin &c1, const ColorBin &c2);

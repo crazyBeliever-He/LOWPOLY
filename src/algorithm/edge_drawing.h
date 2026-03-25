@@ -6,7 +6,7 @@
 #include "algorithm_params.h"
 
 // 输入图片->灰度图->高斯滤波->智能路由
-// TODO: 修改自实现的edge drawing gray 算法, 改成gray和color两个版本都能用
+//
 struct FloatImage {
     int width;
     int height;
@@ -25,6 +25,13 @@ struct EdgeChain {
     std::vector<QPoint> points;
 };
 
+/********************************************************************************/
+// Topal C, Akinlar C.
+// Edge drawing: a combined real-time edge and segment detector[J].
+// Journal of Visual Communication and Image Representation, 2012, 23(6): 862-872.
+/********************************************************************************/
+
+//
 class EdgeDrawing
 {
 // ---------- opencv-contrib edge drawing ----------

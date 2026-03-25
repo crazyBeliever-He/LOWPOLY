@@ -449,11 +449,6 @@ QPushButton:hover, QToolButton:hover {
          </item>
          <item>
           <property name="text">
-           <string>edge drawing line 2</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
            <string>douglas peucker point</string>
           </property>
          </item>
@@ -464,12 +459,17 @@ QPushButton:hover, QToolButton:hover {
          </item>
          <item>
           <property name="text">
-           <string>saliency detection 1</string>
+           <string>saliency detection</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>saliency detection 2</string>
+           <string>jump flooding</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>feature flow</string>
           </property>
          </item>
          <item>
