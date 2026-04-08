@@ -29,17 +29,18 @@ class SaliencyDetection
 {
 public:
     SDParams sDParams;
+    std::vector<QPoint> sampledPoints;
+    // 显著性/掩码图
+    QImage saliencyMap;
     SaliencyDetection();
     // 统一的外部调用接口
     QImage saliencyDetectionInterface(const QImage &input);
 
     // 显著性采样, 在显著性检测之后使用，获取 N-Nc 个随机点
-    std::vector<QPoint> generateNonUniformSamples(
+    int generateNonUniformSamples(
         int Lw, int Lh,                 // 图像宽高
-        int Nc,                         // 已知约束点数量（特征点 + 4个角点）
-        double eta,                     // 采样间隔控制参数
-        const QImage& saliencyMap      // 显著性/掩码图 (二维数组)
-        );
+        int Nc,                         // 已知约束点数量(特征点 + 4个角点)
+        double eta);                    // 采样间隔控制参数
 
 //----------论文作者提供版saliency detection----------
 public:

@@ -1,11 +1,11 @@
-#include "params_util.h"
+#include "param_util.h"
 
 #include <QCoreApplication>
 
 /********************************************************************************/
 // edge drawing params
 /********************************************************************************/
-bool EDParamsUtil::validateEDParams(const opencved::EDParams& params, QString& errorMessage)
+bool EDParamUtil::validateEDParams(const opencved::EDParams& params, QString& errorMessage)
 {
     errorMessage = "";
     bool isValid = true;
@@ -31,15 +31,15 @@ bool EDParamsUtil::validateEDParams(const opencved::EDParams& params, QString& e
                                                     "Warning: Anchor Threshold Value > 255 may result in very few anchors.\n");
     }
     // 3. ScanInterval (扫描间隔)
-    // 源码逻辑：用于循环步长，若为0会导致死循环或崩溃
+    // 源码逻辑：用于扫描步长，若为0会导致死循环或崩溃
     if (params.ScanInterval <= 0) {
         errorMessage += QCoreApplication::translate("EDParamsUtil",
                                                     "Error: Scan Interval must be greater than 0.\n");
         isValid = false;
-    } else if (params.ScanInterval > 10) {
+    } /*else if (params.ScanInterval > 10) {
         errorMessage += QCoreApplication::translate("EDParamsUtil",
                                                     "Warning: Scan Interval > 10 may result in very sparse edges.\n");
-    }
+    }*/
     // 4. MinPathLength (最小路径长度)
     // 源码逻辑：if (params.MinPathLength < 3) params.MinPathLength = 3;
     if (params.MinPathLength < 1) {
@@ -107,7 +107,7 @@ bool EDParamsUtil::validateEDParams(const opencved::EDParams& params, QString& e
     return isValid;
 }
 
-void EDParamsUtil::setEDParams(opencved::EDParams &params,
+void EDParamUtil::setEDParams(opencved::EDParams &params,
                         bool PFmode,
                         int EdgeDetectionOperator,
                         int GradientThresholdValue,
@@ -136,7 +136,7 @@ void EDParamsUtil::setEDParams(opencved::EDParams &params,
     params.MaxErrorThreshold = MaxErrorThreshold;
 }
 
-bool EDParamsUtil::compareEDParams(const opencved::EDParams &params1, const opencved::EDParams &params2)
+bool EDParamUtil::compareEDParam(const opencved::EDParams &params1, const opencved::EDParams &params2)
 {
     return params1.PFmode == params2.PFmode &&
            params1.EdgeDetectionOperator == params2.EdgeDetectionOperator &&
@@ -153,7 +153,7 @@ bool EDParamsUtil::compareEDParams(const opencved::EDParams &params1, const open
            params_util::isEqual(params1.MaxErrorThreshold, params2.MaxErrorThreshold);
 }
 
-void EDParamsUtil::getDefaultEDParams(opencved::EDParams &p)
+void EDParamUtil::getDefaultEDParams(opencved::EDParams &p)
 {
     p.PFmode = false;
     p.EdgeDetectionOperator = 1;
@@ -172,26 +172,50 @@ void EDParamsUtil::getDefaultEDParams(opencved::EDParams &p)
 /********************************************************************************/
 // douglas peucker params
 /********************************************************************************/
+
+//
 bool DPParamsUtil::validateDPParams(const DPParams &params, QString &errorMessage)
 {
     errorMessage = "";
     bool isValid = true;
+
     // 1. Epsilon (容差阈值)
-    // 决定点到直线的距离超过多少时保留该点. 像素坐标系下通常 > 0. 推荐值范围：0.1 ~ 10.0 过小则没简化.过大则丢失形状.
-    if (params.epsilon < 0.0) {
-        errorMessage += QCoreApplication::translate("DPParamsUtil",
-                                                    "Error: Epsilon (tolerance) cannot be negative.\n");
-        isValid = false;
-    } else if (params.epsilon < 0.1) {
-        errorMessage += QCoreApplication::translate("DPParamsUtil",
-                                                    "Warning: Epsilon is very small; simplification might be ineffective.\n");
-    } else if (params.epsilon > 20.0) {
-        errorMessage += QCoreApplication::translate("DPParamsUtil",
-                                                    "Warning: Epsilon is very large; edge features may be severely distorted.\n");
+    if (params.useRelativeEpsilon) {
+        // --- 校验相对比例值 (Relative Epsilon) ---
+        // 推荐范围: 0.001 ~ 0.1
+        if (params.relativeEpsilon < 0.0) {
+            errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                        "Error: Relative epsilon cannot be negative.\n");
+            isValid = false;
+        } else if (params.relativeEpsilon < 0.001) {
+            errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                        "Warning: Relative epsilon is very small; simplification might be ineffective.\n");
+        } else if (params.relativeEpsilon > 0.1) {
+            // 大于 10% 意味着允许几百像素的误差，形状会完全丢失
+            errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                        "Warning: Relative epsilon is very large; edge features may be severely distorted.\n");
+        }
+    }
+    else
+    {
+        // --- 校验绝对像素值 (Absolute Epsilon) ---
+        if (params.absoluteEpsilon < 0.0) {
+            errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                        "Error: Absolute epsilon cannot be negative.\n");
+            isValid = false;
+        } else if (params.absoluteEpsilon < 0.1) {
+            errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                        "Warning: Absolute epsilon is very small; simplification might be ineffective.\n");
+        }
+
+        /* else if (params.absoluteEpsilon > 1000.0) {
+            errorMessage += QCoreApplication::translate("DPParamsUtil",
+                                                        "Warning: Absolute epsilon is very large; edge features may be severely distorted.\n");
+        }*/
     }
 
     // 2. Eta (长度比例系数)
-    // 论文逻辑: Li = eta * (W + H), 论文推荐值为 0.02. eta 过大, 长边不会被打断, Low Poly 感减弱; 如果过小, 点会过于密集.
+    // 论文逻辑: Li = eta * (W + H), 论文推荐值为 0.02.
     if (params.eta <= 0.0) {
         errorMessage += QCoreApplication::translate("DPParamsUtil",
                                                     "Error: Eta (length factor) must be greater than 0.\n");
@@ -208,21 +232,27 @@ bool DPParamsUtil::validateDPParams(const DPParams &params, QString &errorMessag
     return isValid;
 }
 
-void DPParamsUtil::setDPParams(DPParams &params, double epsilon, double eta)
+void DPParamsUtil::setDPParams(DPParams &params, bool useRelativeEpsilon, double relativeEpsilon, double absoluteEpsilon,double eta)
 {
-    params.epsilon = epsilon;
+    params.useRelativeEpsilon = useRelativeEpsilon;
+    params.relativeEpsilon = relativeEpsilon;
+    params.absoluteEpsilon = absoluteEpsilon;
     params.eta = eta;
 }
 
 bool DPParamsUtil::compareDPParams(const DPParams &params1, const DPParams &params2)
 {
-    return params_util::isEqual(params1.epsilon, params2.epsilon) &&
+    return params_util::isEqual(params1.useRelativeEpsilon, params2.useRelativeEpsilon) &&
+           params_util::isEqual(params1.relativeEpsilon, params2.relativeEpsilon) &&
+           params_util::isEqual(params1.absoluteEpsilon,params2.absoluteEpsilon) &&
            params_util::isEqual(params1.eta, params2.eta);
 }
 
 void DPParamsUtil::getDefaultDPParams(DPParams &p)
 {
-    p.epsilon = 1.5;
+    p.useRelativeEpsilon = true;
+    p.relativeEpsilon = 0.01;
+    p.absoluteEpsilon = 4;
     p.eta = 0.02;
 }
 /********************************************************************************/

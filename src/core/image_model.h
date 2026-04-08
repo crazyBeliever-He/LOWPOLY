@@ -20,6 +20,9 @@ public:
         SaliencyDetection,
         JumpFlooding,
         FeatureFlow,
+        VertexOptimization,
+        TriangulationWireframe,
+        LowPoly,
         Test,
         Count
     };

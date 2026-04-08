@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TestLowPoly04 VERSION 0.1 LANGUAGES CXX)
+# cmake原生支持cuda，所以只要用cmake + MSVC编译器，即可简单实现在qt中使用cuda
+#project(TestLowPoly04 VERSION 0.1 LANGUAGES CXX CUDA)
+#set(CMAKE_CUDA_ARCHITECTURES "native")
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -43,8 +46,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/ui/edge_drawing_dialog.h
         src/ui/edge_drawing_dialog.cpp
         src/ui/edge_drawing_dialog.ui
-        src/utils/params_util.h
-        src/utils/params_util.cpp
+        src/utils/param_util.h
+        src/utils/param_util.cpp
         src/algorithm/douglas_peucker.h
         src/algorithm/douglas_peucker.cpp
         src/ui/douglas_peucker_dialog.h
@@ -58,7 +61,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
         exlib/edge_drawing/edge_drawing_lib.h
         exlib/saliency/saliency_api.h
-        exlib/JFA_FF/JumpFlooding_FeatureFlow.h
+        exlib/feature_flow/JumpFlooding_FeatureFlow.h
+        exlib/vertex_optimization/VertexOptimization.h
 
         src/utils/test.h
         src/utils/test.cpp
@@ -66,8 +70,13 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/ui/saliency_detection_dialog.h
         src/ui/saliency_detection_dialog.cpp
         src/ui/saliency_detection_dialog.ui
-        src/algorithm/jump_flooding.h
-        src/algorithm/jump_flooding.cpp
+        src/algorithm/feature_flow.h
+        src/algorithm/feature_flow.cpp
+        src/algorithm/vertex_optimization.h
+        src/algorithm/vertex_optimization.cpp
+        src/algorithm/constrained_triangulation.h
+        src/algorithm/constrained_triangulation.cpp
+        src/utils/hello.cu
 
 
     )
@@ -96,6 +105,8 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
+
+
 # target_include_directories: 将头文件搜索路径添加到指定的目标
 # PRIVATE: 表示这些目录只会在编译目标时使用，其他依赖于该目标的目标不会受到影响
 target_include_directories(TestLowPoly04 PRIVATE
@@ -106,14 +117,20 @@ target_include_directories(TestLowPoly04 PRIVATE
     ${CMAKE_SOURCE_DIR}/exlib
     ${CMAKE_SOURCE_DIR}/exlib/edge_drawing
     ${CMAKE_SOURCE_DIR}/exlib/saliency
-    ${CMAKE_SOURCE_DIR}/exlib/JFA_FF
+    ${CMAKE_SOURCE_DIR}/exlib/feature_flow
+    ${CMAKE_SOURCE_DIR}/exlib/vertex_optimization
+    ${CMAKE_SOURCE_DIR}/exlib/CDT
 )
+
+# CDT 要求 C++11 标准兼容
+target_compile_features(TestLowPoly04 PRIVATE cxx_std_11)
 
 target_link_libraries(TestLowPoly04 PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     "${CMAKE_CURRENT_SOURCE_DIR}/exlib/edge_drawing/edge_drawing_lib.lib"
     "${CMAKE_CURRENT_SOURCE_DIR}/exlib/saliency/SaliencyICCV13.lib"
-    "${CMAKE_CURRENT_SOURCE_DIR}/exlib/JFA_FF/JumpFlooding_FeatureFlow.lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/exlib/feature_flow/JumpFlooding_FeatureFlow.lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/exlib/vertex_optimization/VertexOptimization.lib"
 )
 # =====================================================================
 # 将 CMake 的源码根目录路径作为宏 (PROJECT_SOURCE_DIR) 注入到 C++ 中

@@ -39,7 +39,8 @@ public:
     opencved::EDParams edParams;    // 参数
     ScopedEDResults edResults;  // 结果
     // edge drawing from opencv-contrib
-    void edgeDrawingInLib(const QImage &originalImage);
+    bool edgeDrawingInLib(const QImage &originalImage);
+    QPair<int, int> getEDPointsNumber();
     // 绘制
     QImage drawImage(int width, int height);
 

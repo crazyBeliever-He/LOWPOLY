@@ -19,12 +19,15 @@ public:
     // 二维容器: 外层vector是线(edge drawing算法中的一个EDEdgeSegment)的集合, 内层 vector 是该线上的点
     std::vector<std::vector<QPoint>> dpResults;
     std::vector<QPoint> cornerPoints;   // 四角点单独存放, 因为它们不是"线"
-    double sampleInterval;  // 论文中的 Li. 当前计算出的长度阈值
+    double sampleInterval_Li;  // 论文中的 Li. 当前计算出的长度阈值
+    double currentEpsilon;  // 当前实际使用的像素级 epsilon 阈值 (根据比例或绝对值计算得出)
 
 public:
-    DouglasPeucker(double epsilon = 1.5, double eta = 0.02);
+    DouglasPeucker(bool useRelativeEpsilon = true,
+                   double absoluteEpsilon = 4,
+                   double relativeEpsilon = 0.01, double eta = 0.02);
     // 输入edge drawing结果, 获得 Qt 坐标点集
-    void simplify(const ScopedEDResults& edResults, int imgW, int imgH);
+    bool simplify(const ScopedEDResults& edResults, int imgW, int imgH);
     // 获取约束点数量
     int getDPPointsNumber();
     // 绘制点集

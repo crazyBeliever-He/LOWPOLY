@@ -126,22 +126,9 @@ void Widget::openDialog(const QString& title)
     dialog->raise();
 }
 
-// void Widget::handleDialogData(const QVariant &data)
-// {
-//     // 根据 data 存储的实际类型进行分发
-//     if (data.canConvert<opencved::EDParams>())
-//     {
-//         imageController->setEDParams(data.value<opencved::EDParams>());
-//     }
-//     else if (data.canConvert<DPParams>())
-//     {
-//         imageController->setDPParams(data.value<DPParams>());
-//     }
-// }
-
 void Widget::initContentWidget()
 {
-    //判断字符串"源数据"太暴力,判断数字（0, 1, 2）又容易乱
+    //判断字符串"源数据"太暴力,判断数字 0, 1, 2 又容易乱
     //可以给 ComboBox 的每一项绑定一个自定义数据.这样无论文字怎么变,逻辑都不会断
     connect(ui->comboBox, &QComboBox::currentIndexChanged,
             imageController, &ImageController::onImageTypeSelected);

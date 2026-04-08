@@ -14,23 +14,254 @@ SaliencyDetection::SaliencyDetection()
     sDParams.type = 0;
 }
 
-// 这个函数根据 UI 传过来的参数（sDParams.type），决定使用哪种算法
+// 有多种实现方法, 默认用 exe, exe 失败则采用更简单的 dll
 QImage SaliencyDetection::saliencyDetectionInterface(const QImage &input)
 {
     if (input.isNull()) return QImage();
 
-    // 对应 UI 中 QComboBox 的索引：
+    // 对应 UI 中 QComboBox 的索引:
     // 0 -> "type1", 1 -> "type2", 2 -> "type3"
-    switch (sDParams.type) {
+    switch (sDParams.type)
+    {
     case 0:// 选项 1: 跨进程通信(IPC), 完整的文作者提供版
-        return saliencyDetectionExe(input);
+        saliencyMap = saliencyDetectionExe(input);
+        if(!saliencyMap.isNull())
+        {
+            LOG_WARNING << "saliency detection exe falied, use dll version";
+            break;
+        }
     case 1:// 选项 2: 调用DLL, 文作者提供版但无CSD
-        return saliencyDetectionApi(input);
-    case 2:// 选项 3: 自实现版, 效果差
-        return getSaliencyDetection(input);
+        saliencyMap = saliencyDetectionApi(input);
+        break;
+    case 2:// 选项 3: 自实现版, 效果很差
+        saliencyMap = getSaliencyDetection(input);
+        break;
     default:
-        return getSaliencyDetection(input);
+        saliencyMap = saliencyDetectionExe(input);
+        break;
     }
+    return saliencyMap;
+}
+
+/********************************************************************************/
+// saliency detection from paper auther
+/********************************************************************************/
+
+// saliency detection by exe
+QImage SaliencyDetection::saliencyDetectionExe(const QImage &input)
+{
+    if (input.isNull()) return QImage();
+    //LOG_INFO << "[显著性检测] 启动跨进程 EXE 模式";
+
+    // 1. 生成唯一安全的临时文件路径
+    QString uuid = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    QString tempDir = QCoreApplication::applicationDirPath();
+    QString inPath = tempDir + "/sal_in_" + uuid + ".png";
+    QString outPath = tempDir + "/sal_out_" + uuid + ".png";
+
+    // 2. 将 Qt 的图片先保存到硬盘
+    if (!input.save(inPath))
+    {
+        LOG_ERROR << "[显著性检测] 无法保存临时输入文件";
+        return QImage();
+    }
+
+    // 3. 配置 QProcess
+    QProcess process;
+    // 使用 CMake 注入的源码目录宏, 宏 PROJECT_SOURCE_DIR 在编译时会被替换成类似 "D:/Code/Qt/TestLowPoly04" 的字符串
+    QString sourceDir = QString(PROJECT_SOURCE_DIR);
+    QString exePath = sourceDir + "/exlib/saliency/SaliencyICCV13.exe";
+    // 检查 EXE 是否存在
+    if (!QFile::exists(exePath))
+    {
+        LOG_ERROR << "[显著性检测] 找不到核心组件: " << exePath;
+        QFile::remove(inPath);
+        return QImage();
+    }
+    // 填入命令行参数
+    QStringList args;
+    args << inPath << outPath;
+
+    // 4. 执行 EXE 并阻塞等待
+    process.start(exePath, args);
+    if (!process.waitForStarted())
+    {
+        LOG_ERROR << "[显著性检测] 无法启动 32 位 EXE 进程";
+        QFile::remove(inPath);
+        return QImage();
+    }
+    // 等待算法执行完成(设置最大超时时间为 30 秒，防止死锁)
+    if (!process.waitForFinished(30000))
+    {
+        LOG_ERROR << "[显著性检测] EXE 进程超时或崩溃";
+        process.kill();
+        QFile::remove(inPath);
+        return QImage();
+    }
+
+    // 5. 检查执行结果
+    int exitCode = process.exitCode();
+    if (exitCode == 0)
+    {   // 成功时，读取 stdout (捕捉 EXE 中的 cout)
+        // QString successLog = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
+        //LOG_INFO << "[显著性检测] 跨进程返回: " << successLog;
+
+        // 6. 读取算好的显著性结果图
+        QImage result(outPath);
+        if (result.isNull())
+        {
+            LOG_ERROR << "[显著性检测] 无法读取输出文件, 可能 EXE 内部生成失败";
+        }
+        else
+        {   // 强制确保格式为 8 位灰度
+            result = result.convertToFormat(QImage::Format_Grayscale8);
+        }
+
+        // 7. 环保清理: 删掉临时图片
+        QFile::remove(inPath);
+        QFile::remove(outPath);
+
+        return result;
+    }
+    else
+    {   // 失败时，读取 stderr (捕捉 EXE 中的 cerr)
+        QString errorLog = QString::fromLocal8Bit(process.readAllStandardError()).trimmed();
+        LOG_ERROR << "[显著性检测失败] 错误码: " << exitCode << ", 原因: " << errorLog;
+        // 环保清理
+        QFile::remove(inPath);
+        // 尝试删除outPath(出错时大概率没有生成)
+        QFile::remove(outPath);
+
+        return QImage();
+    }
+}
+
+// saliency detection by dll
+QImage SaliencyDetection::saliencyDetectionApi(const QImage &input)
+{
+    if (input.isNull()) return QImage();
+
+    //LOG_INFO << "[显著性检测] 开始处理图像";
+    int w = input.width();
+    int h = input.height();
+    QImage workImage = input.convertToFormat(QImage::Format_BGR888);
+
+    // 1. 创建一个绝对连续的内存缓冲区
+    std::vector<unsigned char> continuous_img_data(w * h * 3);
+    for (int y = 0; y < h; ++y)
+    {// 逐行拷贝数据，避开 QImage 在行末可能附加的 Padding
+        std::memcpy(continuous_img_data.data() + y * w * 3, workImage.scanLine(y), w * 3);
+    }
+    // 2. 准备输出缓冲区 (8位灰度图，所以大小是 width * height)
+    std::vector<unsigned char> out_saliency(w * h, 0);
+    // 3. 准备用于接收 DLL 状态的缓冲区
+    char dll_status_msg[256] = {0};
+    // 4. 调用封装的黑盒 DLL
+    int result = compute_saliency_mask(continuous_img_data.data(),
+                                       w, h, 3,
+                                       out_saliency.data(),
+                                       dll_status_msg, sizeof(dll_status_msg));
+    // 5. 根据结果进行处理
+    if (result == 0)
+    {   //LOG_INFO << "[显著性检测] 计算成功完成！";
+        QImage maskImage(w, h, QImage::Format_Grayscale8);
+        for (int y = 0; y < h; ++y)
+        {   // 逐行深拷贝回 QImage，交由 Qt 安全接管内存
+            std::memcpy(maskImage.scanLine(y), out_saliency.data() + y * w, w);
+        }
+        return maskImage;
+    }
+    else
+    {   // 失败时打印调试信息（错误码 + DLL内部传出的最后遗言/异常信息）
+        LOG_ERROR << "[显著性检测失败] 错误码: " << result
+                  << ", DLL最后状态/异常日志: " << dll_status_msg;
+        // 失败时返回空图像，避免返回包含内存脏数据（雪花噪点）的异常图像
+        return QImage();
+    }
+}
+
+/********************************************************************************/
+// generate nonuniform samples
+/********************************************************************************/
+
+// generate external nonuniform samples
+int SaliencyDetection::generateNonUniformSamples(
+    int Lw, int Lh,                 // 图像宽高
+    int Nc,                         // 已知约束点数量(特征点 + 4个角点)
+    double eta                      // 采样间隔控制参数
+    )
+{
+    if(Lw <=0 || Lh <= 0 || eta <=0 || Nc <= 0 || saliencyMap.format() != QImage::Format_Grayscale8)
+    {
+        LOG_ERROR << "Saliency Detection: sampling params error";
+        return {};
+    }
+    // 1. 计算总采样数 N
+    int N = sDParams.userN;
+    if (N <= 0) {
+        // 根据论文公式计算采样间隔 Li
+        double Li = eta * (Lw + Lh);
+        // 默认总点数公式
+        N = static_cast<int>(std::floor(Lw / Li) * std::floor(Lh / Li));
+    }
+
+    // 2. 计算需要采样的自由点数
+    // TODO: 限制自由点和约束点的比例和数量
+    int remainingPoints = N - Nc;
+    if (remainingPoints <= 0) {
+        LOG_INFO << "[显著性采样] 目标总点数 N (" << N
+                 << ") 小于/等于 DP 提取的约束点数 Nc (" << Nc
+                 << ")，自动追加 " << N/4 << " 个背景自由点以保证网格连通性";
+        remainingPoints = N/4;
+    }
+
+    // 3. 计算前景(Ns)和背景(Nb)的采样数量
+    int Ns = static_cast<int>(std::round(sDParams.lambda * remainingPoints));
+    if (Ns < 0) Ns = 0;
+    if (Ns > remainingPoints) Ns = remainingPoints;
+    int Nb = remainingPoints - Ns;
+
+    // 4. 将所有像素划分为前景候选池和背景候选池
+    std::vector<QPoint> salientPool;
+    std::vector<QPoint> backgroundPool;
+    // 预分配内存以提高性能
+    salientPool.reserve((Lw * Lh) / 2);
+    backgroundPool.reserve((Lw * Lh) / 2);
+    for (int y = 0; y < Lh; ++y)
+    {
+        const uchar* scan = saliencyMap.constScanLine(y);
+        for (int x = 0; x < Lw; ++x)
+        {
+            if (scan[x] >= sDParams.threshold) {
+                salientPool.emplace_back(x, y);
+            } else {
+                backgroundPool.emplace_back(x, y);
+            }
+        }
+    }
+
+    // 5. 随机抽取
+    sampledPoints.clear();
+    sampledPoints.reserve(remainingPoints);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    // 辅助 Lambda：从候选池中打乱并抽取指定数量的点
+    // C++17 替代 std::shuffle 的写法: 使用std::sample
+    auto extractSamples = [&](std::vector<QPoint>& pool, int count)
+    {
+        if (count <= 0 || pool.empty())
+            return;
+        std::shuffle(pool.begin(), pool.end(), gen);
+        int actualCount = std::min(count, static_cast<int>(pool.size()));
+        sampledPoints.insert(sampledPoints.end(), pool.begin(), pool.begin() + actualCount);
+    };
+
+    extractSamples(salientPool, Ns);
+    extractSamples(backgroundPool, Nb);
+
+    return static_cast<int>(sampledPoints.size());
 }
 
 /********************************************************************************/
@@ -189,220 +420,4 @@ QImage SaliencyDetection::getSaliencyDetection(const QImage &input)
         }
     }
     return result;
-}
-
-/********************************************************************************/
-// saliency detection from paper auther
-/********************************************************************************/
-
-// saliency detection by dll
-QImage SaliencyDetection::saliencyDetectionApi(const QImage &input)
-{
-    if (input.isNull()) return QImage();
-
-    //LOG_INFO << "[显著性检测] 开始处理图像";
-    int w = input.width();
-    int h = input.height();
-    QImage workImage = input.convertToFormat(QImage::Format_BGR888);
-
-    // 1. 创建一个绝对连续的内存缓冲区
-    std::vector<unsigned char> continuous_img_data(w * h * 3);
-    for (int y = 0; y < h; ++y)
-    {// 逐行拷贝数据，避开 QImage 在行末可能附加的 Padding
-        std::memcpy(continuous_img_data.data() + y * w * 3, workImage.scanLine(y), w * 3);
-    }
-    // 2. 准备输出缓冲区 (8位灰度图，所以大小是 width * height)
-    std::vector<unsigned char> out_saliency(w * h, 0);
-    // 3. 准备用于接收 DLL 状态的缓冲区
-    char dll_status_msg[256] = {0};
-    // 4. 调用封装的黑盒 DLL
-    int result = compute_saliency_mask(continuous_img_data.data(),
-                                       w, h, 3,
-                                       out_saliency.data(),
-                                       dll_status_msg, sizeof(dll_status_msg));
-    // 5. 根据结果进行处理
-    if (result == 0)
-    {   //LOG_INFO << "[显著性检测] 计算成功完成！";
-         QImage maskImage(w, h, QImage::Format_Grayscale8);
-        for (int y = 0; y < h; ++y)
-        {   // 逐行深拷贝回 QImage，交由 Qt 安全接管内存
-            std::memcpy(maskImage.scanLine(y), out_saliency.data() + y * w, w);
-        }
-        return maskImage;
-    }
-    else
-    {   // 失败时打印调试信息（错误码 + DLL内部传出的最后遗言/异常信息）
-        LOG_ERROR << "[显著性检测失败] 错误码: " << result
-                  << ", DLL最后状态/异常日志: " << dll_status_msg;
-        // 失败时返回空图像，避免返回包含内存脏数据（雪花噪点）的异常图像
-        return QImage();
-    }
-}
-
-// saliency detection by exe
-QImage SaliencyDetection::saliencyDetectionExe(const QImage &input)
-{
-    if (input.isNull()) return QImage();
-    //LOG_INFO << "[显著性检测] 启动跨进程 EXE 模式";
-
-    // 1. 生成唯一安全的临时文件路径
-    QString uuid = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    QString tempDir = QCoreApplication::applicationDirPath();
-    QString inPath = tempDir + "/sal_in_" + uuid + ".png";
-    QString outPath = tempDir + "/sal_out_" + uuid + ".png";
-
-    // 2. 将 Qt 的图片先保存到硬盘
-    if (!input.save(inPath))
-    {
-        LOG_ERROR << "[显著性检测] 无法保存临时输入文件";
-        return QImage();
-    }
-
-    // 3. 配置 QProcess
-    QProcess process;
-    // 使用 CMake 注入的源码目录宏, 宏 PROJECT_SOURCE_DIR 在编译时会被替换成类似 "D:/Code/Qt/TestLowPoly04" 的字符串
-    QString sourceDir = QString(PROJECT_SOURCE_DIR);
-    QString exePath = sourceDir + "/exlib/saliency/SaliencyICCV13.exe";
-    // 检查 EXE 是否存在
-    if (!QFile::exists(exePath))
-    {
-        LOG_ERROR << "[显著性检测] 找不到核心组件: " << exePath;
-        QFile::remove(inPath);
-        return QImage();
-    }
-    // 填入命令行参数
-    QStringList args;
-    args << inPath << outPath;
-
-    // 4. 执行 EXE 并阻塞等待
-    process.start(exePath, args);
-    if (!process.waitForStarted())
-    {
-        LOG_ERROR << "[显著性检测] 无法启动 32 位 EXE 进程";
-        QFile::remove(inPath);
-        return QImage();
-    }
-    // 等待算法执行完成(设置最大超时时间为 30 秒，防止死锁)
-    if (!process.waitForFinished(30000))
-    {
-        LOG_ERROR << "[显著性检测] EXE 进程超时或崩溃";
-        process.kill();
-        QFile::remove(inPath);
-        return QImage();
-    }
-
-    // 5. 检查执行结果
-    int exitCode = process.exitCode();
-    if (exitCode == 0)
-    {   // 成功时，读取 stdout (捕捉 EXE 中的 cout)
-        // QString successLog = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
-        //LOG_INFO << "[显著性检测] 跨进程返回: " << successLog;
-
-        // 6. 读取算好的显著性结果图
-        QImage result(outPath);
-        if (result.isNull())
-        {
-            LOG_ERROR << "[显著性检测] 无法读取输出文件, 可能 EXE 内部生成失败";
-        }/*else{   // 强制确保格式为 8 位灰度
-            result = result.convertToFormat(QImage::Format_Grayscale8);
-        }*/
-
-        // 7. 环保清理: 删掉临时图片
-        QFile::remove(inPath);
-        QFile::remove(outPath);
-
-        return result;
-    }
-    else
-    {   // 失败时，读取 stderr (捕捉 EXE 中的 cerr)
-        QString errorLog = QString::fromLocal8Bit(process.readAllStandardError()).trimmed();
-        LOG_ERROR << "[显著性检测失败] 错误码: " << exitCode << ", 原因: " << errorLog;
-        // 环保清理
-        QFile::remove(inPath);
-        // 尝试删除outPath(出错时大概率没有生成)
-        QFile::remove(outPath);
-
-        return QImage();
-    }
-}
-
-/********************************************************************************/
-// generate nonuniform samples
-/********************************************************************************/
-
-// generate external nonuniform samples
-std::vector<QPoint> SaliencyDetection::generateNonUniformSamples(
-    int Lw, int Lh,                 // 图像宽高
-    int Nc,                         // 已知约束点数量(特征点 + 4个角点)
-    double eta,                     // 采样间隔控制参数
-    const QImage& saliencyMap       // 显著性/掩码图 (二维数组)
-    )
-{
-    if(Lw <=0 || Lh <= 0 || eta <=0 || Nc <= 0 || saliencyMap.format() != QImage::Format_Grayscale8)
-    {
-        LOG_ERROR << "Saliency Detection: sampling params error";
-        return {};
-    }
-    // 1. 计算总采样数 N
-    int N = sDParams.userN;
-    if (N <= 0) {
-        // 根据论文公式计算采样间隔 Li
-        double Li = eta * (Lw + Lh);
-        // 默认总点数公式
-        N = static_cast<int>(std::floor(Lw / Li) * std::floor(Lh / Li));
-    }
-
-    // 2. 计算需要采样的自由点数
-    int remainingPoints = N - Nc;
-    if (remainingPoints <= 0) {
-        return {}; // 约束点已够, 无需额外撒点
-    }
-
-    // 3. 计算前景(Ns)和背景(Nb)的采样数量
-    int Ns = static_cast<int>(std::round(sDParams.lambda * remainingPoints));
-    if (Ns < 0) Ns = 0;
-    if (Ns > remainingPoints) Ns = remainingPoints;
-    int Nb = remainingPoints - Ns;
-
-    // 4. 将所有像素划分为前景候选池和背景候选池
-    std::vector<QPoint> salientPool;
-    std::vector<QPoint> backgroundPool;
-    // 预分配内存以提高性能
-    salientPool.reserve((Lw * Lh) / 2);
-    backgroundPool.reserve((Lw * Lh) / 2);
-    for (int y = 0; y < Lh; ++y)
-    {
-        const uchar* scan = saliencyMap.constScanLine(y);
-        for (int x = 0; x < Lw; ++x)
-        {
-            if (scan[x] >= sDParams.threshold) {
-                salientPool.emplace_back(x, y);
-            } else {
-                backgroundPool.emplace_back(x, y);
-            }
-        }
-    }
-
-    // 5. 随机抽取
-    std::vector<QPoint> sampledPoints;
-    sampledPoints.reserve(remainingPoints);
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
-    // 辅助 Lambda：从候选池中打乱并抽取指定数量的点
-    // C++17 替代 std::shuffle 的写法: 使用std::sample
-    auto extractSamples = [&](std::vector<QPoint>& pool, int count)
-    {
-        if (count <= 0 || pool.empty())
-            return;
-        std::shuffle(pool.begin(), pool.end(), gen);
-        int actualCount = std::min(count, static_cast<int>(pool.size()));
-        sampledPoints.insert(sampledPoints.end(), pool.begin(), pool.begin() + actualCount);
-    };
-
-    extractSamples(salientPool, Ns);
-    extractSamples(backgroundPool, Nb);
-
-    return sampledPoints;
 }

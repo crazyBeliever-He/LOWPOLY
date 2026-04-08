@@ -1,4 +1,5 @@
 #include "edge_drawing.h"
+#include "logger.h"
 
 #include <QtMath>
 #include <stack>
@@ -18,6 +19,117 @@ EdgeDrawing::EdgeDrawing()
     stdAnchorThreshold = 10;
     shortEdgeLength = 2;
 }
+
+/********************************************************************************/
+// edge drawing from opencv
+/********************************************************************************/
+
+// edge drawing form opencv contrib
+bool EdgeDrawing::edgeDrawingInLib(const QImage &originalImage)
+{
+    QImage workImage;
+    int channels = 0;
+    // Edge Drawing 支持 CV_8UC1 CV_8UC3 CV_8UC4
+    switch (originalImage.format())
+    {
+    case QImage::Format_Grayscale8:
+    case QImage::Format_Indexed8:
+        workImage = originalImage;
+        channels = 1;
+        break;
+
+    case QImage::Format_ARGB32:
+    case QImage::Format_ARGB32_Premultiplied:
+    case QImage::Format_RGBA8888:
+        // // 若有透明通道, 转为 BGRA (对应 CV_8UC4). Qt 无 BGRA8888 格式.
+        // {   // 统一将透明背景下的颜色设为白色, 为了消除伪影. 目标像素（Dst'） = (1 - Alpha) * Dst + Alpha * Src
+        //     // QImage::Format_ARGB32 和 QImage::Format_RGBA8888 在存储上有很大的区别的(含大小端问题), 注意区分.
+        //     // 利用 RGBA8888 字节流格式 + rgbSwapped 得到固定的 BGRA
+        //     workImage = QImage(originalImage.size(), QImage::Format_RGBA8888);
+        //     workImage.fill(Qt::white);
+        //     QPainter painter(&workImage);
+        //     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        //     painter.drawImage(0, 0, originalImage);
+        //     painter.end();
+
+        //     workImage = workImage.rgbSwapped(); // [Byte0:B, Byte1:G, Byte2:R, Byte3:A]
+        //     channels = 4;
+        // }
+        // break;
+
+    default:
+        // 其余一律转为 BGR (对应 CV_8UC3). Format_BGR888 是字节流格式, 在内存中按 B, G, R 顺序排列.
+        workImage = originalImage.convertToFormat(QImage::Format_BGR888);
+        channels = 3;
+        break;
+    }
+
+    edResults.reset(RunEdgeDrawingFull(workImage.bits(), workImage.width(),
+                                       workImage.height(), workImage.bytesPerLine(),
+                                       channels, edParams));
+    if(edResults.data.segmentCount <= 0 || edResults.data.segments == nullptr)
+    {
+        LOG_ERROR << "edge drawing form opencv failed: number of segments(or ptr) error";
+        return false;
+    }
+    return true;
+}
+//
+QPair<int, int> EdgeDrawing::getEDPointsNumber()
+{
+    int totalPoints = 0;
+    int segmentCount = edResults.data.segmentCount;
+
+    for (int i = 0; i < segmentCount; ++i)
+    {
+        totalPoints += edResults.data.segments[i].count;
+    }
+
+    return qMakePair(segmentCount, totalPoints);
+}
+
+// draw result
+QImage EdgeDrawing::drawImage(int width, int height)
+{
+    QImage edgeMap(width, height, QImage::Format_RGB888);
+    edgeMap.fill(Qt::black);
+
+    // 预先获取所有行的首地址
+    QVector<uchar*> linePtrs(height);
+    for (int y = 0; y < height; ++y)
+    {
+        linePtrs[y] = edgeMap.scanLine(y);
+    }
+
+    for (int i = 0; i < edResults.data.segmentCount; ++i)
+    {
+        opencved::EDEdgeSegment& seg = edResults.data.segments[i];
+        // 动态计算颜色: 根据索引 i 平分 360 度色相环，保证相邻边缘颜色差异最大
+        int hue = (i * 137) % 360; // 137 是黄金角度偏移，能让颜色分布更均匀(完全剩余系)
+        QColor segmentColor = QColor::fromHsv(hue, 255, 255);
+
+        for (int j = 0; j < seg.count; ++j)
+        {
+            opencved::EDPoint& pt = seg.points[j];
+            // 确保坐标不越界
+            if (pt.x >= 0 && pt.x < edgeMap.width() && pt.y >= 0 && pt.y < edgeMap.height())
+            {
+                uchar* pixel = linePtrs[pt.y] + (pt.x * 3);
+                pixel[0] = segmentColor.red();
+                pixel[1] = segmentColor.green();
+                pixel[2] = segmentColor.blue();
+                // pixel[0] = 255;
+                // pixel[1] = 255;
+                // pixel[2] = 255;
+            }
+        }
+    }
+    return edgeMap;
+}
+
+/********************************************************************************/
+// my edge drawing
+/********************************************************************************/
 
 QImage EdgeDrawing::getEDImageGray16(const QImage &origin)
 {
@@ -635,91 +747,4 @@ QImage EdgeDrawing::drawEdgeChains(int width, int height, const std::vector<Edge
         }
     }
     return result;
-}
-
-/********************************************************************************/
-// edge drawing from opencv
-/********************************************************************************/
-
-// edge drawing form opencv contrib
-void EdgeDrawing::edgeDrawingInLib(const QImage &originalImage)
-{
-    QImage workImage;
-    int channels = 0;
-    // Edge Drawing 支持 CV_8UC1 CV_8UC3 CV_8UC4
-    switch (originalImage.format())
-    {
-    case QImage::Format_Grayscale8:
-    case QImage::Format_Indexed8:
-        workImage = originalImage;
-        channels = 1;
-        break;
-
-    case QImage::Format_ARGB32:
-    case QImage::Format_ARGB32_Premultiplied:
-    case QImage::Format_RGBA8888:
-        // 若有透明通道, 转为 BGRA (对应 CV_8UC4). Qt 无 BGRA8888 格式.
-        {   // 统一将透明背景下的颜色设为白色, 为了消除伪影. 目标像素（Dst'） = (1 - Alpha) * Dst + Alpha * Src
-            // QImage::Format_ARGB32 和 QImage::Format_RGBA8888 在存储上有很大的区别的(含大小端问题), 注意区分.
-            // 利用 RGBA8888 字节流格式 + rgbSwapped 得到固定的 BGRA
-            workImage = QImage(originalImage.size(), QImage::Format_RGBA8888);
-            workImage.fill(Qt::white);
-            QPainter painter(&workImage);
-            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-            painter.drawImage(0, 0, originalImage);
-            painter.end();
-
-            workImage = workImage.rgbSwapped(); // [Byte0:B, Byte1:G, Byte2:R, Byte3:A]
-            channels = 4;
-        }
-        break;
-
-    default:
-        // 其余一律转为 BGR (对应 CV_8UC3). Format_BGR888 是字节流格式, 在内存中按 B, G, R 顺序排列.
-        workImage = originalImage.convertToFormat(QImage::Format_BGR888);
-        channels = 3;
-        break;
-    }
-
-    edResults.reset(RunEdgeDrawingFull(workImage.bits(), workImage.width(),
-                                       workImage.height(), workImage.bytesPerLine(),
-                                       channels, edParams));
-}
-
-QImage EdgeDrawing::drawImage(int width, int height)
-{
-    QImage edgeMap(width, height, QImage::Format_RGB888);
-    edgeMap.fill(Qt::black);
-
-    // 预先获取所有行的首地址
-    QVector<uchar*> linePtrs(height);
-    for (int y = 0; y < height; ++y)
-    {
-        linePtrs[y] = edgeMap.scanLine(y);
-    }
-
-    for (int i = 0; i < edResults.data.segmentCount; ++i)
-    {
-        opencved::EDEdgeSegment& seg = edResults.data.segments[i];
-        // 动态计算颜色: 根据索引 i 平分 360 度色相环，保证相邻边缘颜色差异最大
-        int hue = (i * 137) % 360; // 137 是黄金角度偏移，能让颜色分布更均匀(完全剩余系)
-        QColor segmentColor = QColor::fromHsv(hue, 255, 255);
-
-        for (int j = 0; j < seg.count; ++j)
-        {
-            opencved::EDPoint& pt = seg.points[j];
-            // 确保坐标不越界
-            if (pt.x >= 0 && pt.x < edgeMap.width() && pt.y >= 0 && pt.y < edgeMap.height())
-            {
-                uchar* pixel = linePtrs[pt.y] + (pt.x * 3);
-                pixel[0] = segmentColor.red();
-                pixel[1] = segmentColor.green();
-                pixel[2] = segmentColor.blue();
-                // pixel[0] = 255;
-                // pixel[1] = 255;
-                // pixel[2] = 255;
-            }
-        }
-    }
-    return edgeMap;
 }

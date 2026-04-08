@@ -1,9 +1,8 @@
-#include "jump_flooding.h"
+#include "feature_flow.h"
 #include "logger.h"
 #include <algorithm>
-#include <QDebug>
 
-bool JumpFlooding::jumpFloodingCUDAApi(const ScopedEDResults& edResults,
+bool FeatureFlow::jumpFloodingCUDAApi(const ScopedEDResults& edResults,
                                        int imgWidth, int imgHeight)
 {
     // 1. 基础参数校验
@@ -64,7 +63,7 @@ bool JumpFlooding::jumpFloodingCUDAApi(const ScopedEDResults& edResults,
     return true;
 }
 
-bool JumpFlooding::featureFlowCUDAApi(const std::vector<JFAFF::JFAPoint>& nearestSeedMap,
+bool FeatureFlow::featureFlowCUDAApi(const std::vector<JFAFF::JFAPoint>& nearestSeedMap,
                                       int imgWidth, int imgHeight, float m)
 {
     // 1. 基础参数校验
@@ -105,7 +104,9 @@ bool JumpFlooding::featureFlowCUDAApi(const std::vector<JFAFF::JFAPoint>& neares
     return true;
 }
 
-QImage JumpFlooding::drawJFAMap(int width, int height, const std::vector<JFAFF::JFAPoint>& jfaOutput, const ScopedEDResults& edResults)
+QImage FeatureFlow::drawJumpFloodingMap(int width, int height,
+                                        const std::vector<JFAFF::JFAPoint>& jfaOutput,
+                                        const ScopedEDResults& edResults)
 {
     // 1. 初始化输出图像并填充为黑色
     QImage jfaMap(width, height, QImage::Format_RGB888);
@@ -162,7 +163,7 @@ QImage JumpFlooding::drawJFAMap(int width, int height, const std::vector<JFAFF::
     }
     return jfaMap;
 }
-QImage JumpFlooding::drawFeatureFlowMap(int width, int height, const std::vector<float>& ffOutput)
+QImage FeatureFlow::drawFeatureFlowMap(int width, int height, const std::vector<float>& ffOutput)
 {
     // 1. 初始化单通道灰度图格式 (Format_Grayscale8)，比 RGB888 更节省内存且契合数据含义
     QImage ffMap(width, height, QImage::Format_Grayscale8);

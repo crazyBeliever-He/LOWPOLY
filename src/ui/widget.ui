@@ -474,6 +474,21 @@ QPushButton:hover, QToolButton:hover {
          </item>
          <item>
           <property name="text">
+           <string>vertex optimization</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>triangulation wireframe</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>LowPoly</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
            <string>test</string>
           </property>
          </item>

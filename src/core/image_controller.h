@@ -23,20 +23,22 @@ class ImageWidget;
 class EdgeDrawing;
 class DouglasPeucker;
 class SaliencyDetection;
-class JumpFlooding;
+class FeatureFlow;
+class VertexOptimization;
+class ConstrainedTriangulation;
 
 class ImageController : public QObject
 {
     Q_OBJECT
 
 public:
-    enum class ProcessStage {
-        None,
-        EdgeDrawingDone,
-        DouglasPeuckerDone
-    };
-    Q_ENUM(ProcessStage)
-    ProcessStage currentStage = ProcessStage::None;
+    // enum class ProcessStage {
+    //     None,
+    //     EdgeDrawingDone,
+    //     DouglasPeuckerDone
+    // };
+    //Q_ENUM(ProcessStage)
+    //ProcessStage currentStage = ProcessStage::None;
 
     ImageModel *imageModel;
     ImageWidget *imageWidget;
@@ -44,7 +46,9 @@ public:
     std::unique_ptr<EdgeDrawing> edgeDrawing;
     std::unique_ptr<DouglasPeucker> douglasPeucker;
     std::unique_ptr<SaliencyDetection> saliencyDetection;
-    std::unique_ptr<JumpFlooding> jumpFlooding;
+    std::unique_ptr<FeatureFlow> featureFlow;
+    std::unique_ptr<VertexOptimization> vertexOptimization;
+    std::unique_ptr<ConstrainedTriangulation> constrainedTriangulation;
 
 public:
     ImageController(ImageModel *model,
@@ -67,6 +71,8 @@ public:
     void applyDouglasPeucker();
     void applySaliencyDetection();
     void applyJumpFloodingAndFeatureFlow();
+    void applyVertexOptimization();
+    void applyConstrainedTriangulation();
     // 执行所有图像处理方法
     void applyAllImageProcess();
 

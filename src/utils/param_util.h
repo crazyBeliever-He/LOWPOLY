@@ -1,5 +1,5 @@
-#ifndef PARAMS_UTIL_H
-#define PARAMS_UTIL_H
+#ifndef PARAM_UTIL_H
+#define PARAM_UTIL_H
 
 #include <QString>
 #include "algorithm_params.h"
@@ -13,7 +13,7 @@ inline bool isEqual(double a, double b, double epsilon = DEFAULT_EPSILON) {
 
 }
 //默认参数只能在函数声明中指定，不能在函数定义中重复
-class EDParamsUtil
+class EDParamUtil
 {
 public:
     //校验参数合法性. errorMessage 如果校验失败,存储错误描述信息
@@ -25,7 +25,7 @@ public:
                             bool SumFlag = true, bool NFAValidation = true,
                             int MinLineLength = 10, double MaxDistanceBetweenTwoLines = 6.0,
                             double LineFitErrorThreshold = 1.0,double MaxErrorThreshold = 1.3);
-    static bool compareEDParams(const opencved::EDParams &params1, const opencved::EDParams &params2);
+    static bool compareEDParam(const opencved::EDParams &params1, const opencved::EDParams &params2);
     static void getDefaultEDParams(opencved::EDParams &p);
 };
 
@@ -34,7 +34,9 @@ class DPParamsUtil
 public:
     //校验参数合法性. errorMessage 如果校验失败,存储错误描述信息
     static bool validateDPParams(const DPParams &params, QString &errorMessage);
-    static void setDPParams(DPParams &params, double epsilon = 1.5, double eta = 0.02);
+    static void setDPParams(DPParams &params, bool useRelativeEpsilon = true,
+                            double relativeEpsilon = 0.01,
+                            double absoluteEpsilon = 4,double eta = 0.02);
     static bool compareDPParams(const DPParams &params1, const DPParams &params2);
     static void getDefaultDPParams(DPParams &p);
 
@@ -53,4 +55,4 @@ public:
 
 };
 
-#endif // PARAMS_UTIL_H
+#endif // PARAM_UTIL_H

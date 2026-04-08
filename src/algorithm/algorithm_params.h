@@ -7,7 +7,9 @@
 //POD (Plain Old Data) 结构体(不含虚函数、构造函数、容器等)
 
 struct DPParams {
-    double epsilon; // Douglas-Peucker 的误差容限
+    bool useRelativeEpsilon; // true: 启用比例容限, false: 启用绝对容限
+    double relativeEpsilon;          // 比例误差容限系数 (结合图像尺寸计算得出最终 epsilon)
+    double absoluteEpsilon;  // 具体的/绝对的误差容限值 (像素单位)
     double eta; // Gai & Wang 论文中 Li 计算的比例因子
 };
 
@@ -50,6 +52,10 @@ struct SDParams{
     int userN = 0;                  // 用户指定的总采样数 (为0则使用论文公式)
     double lambda = 0.7;            // 前景密度控制参数
     uint8_t threshold = 128;        // 区分前景/背景的灰度阈值
+};
+
+struct JFAFFParams{
+    int jfaType;
 };
 
 // 在编译时声明一个类型，允许该类型与 QVariant 一起使用. 使 QVariant 能够处理该类型.

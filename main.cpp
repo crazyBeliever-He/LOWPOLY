@@ -5,8 +5,7 @@
 #include <QMessageBox>
 
 #include "logger.h"
-void test();
-
+//#include "test.h"
 /********************************************************************************/
 // Gai M, Wang G.
 // Artistic low poly rendering for images[J].
@@ -16,7 +15,7 @@ void test();
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-
+    //runHelloCUDA();
     QString translation = "";
     // QTranslator translator;
     // const QStringList uiLanguages = QLocale::system().uiLanguages();

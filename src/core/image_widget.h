@@ -40,6 +40,10 @@ private:
     void updateCachedPixmap();
     // 将控件坐标映射到原图坐标
     QPointF widgetToImage(const QPointF &p) const;
+
+signals:
+    void requestAddPoint(QPointF imgPos);
+    void requestDeletePointsInArea(QRectF imgArea);
 };
 
 #endif // IMAGE_WIDGET_H

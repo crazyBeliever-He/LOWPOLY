@@ -2,7 +2,7 @@
 #include "ui_edge_drawing_dialog.h"
 
 #include "edge_drawing_lib.h"
-#include "params_util.h"
+#include "param_util.h"
 #include "dialogs_factory.h"
 
 EDParamDialog::EDParamDialog(QWidget *parent)
@@ -55,13 +55,13 @@ void EDParamDialog::setData(const QVariant &data)
 
 bool EDParamDialog::validate(const QVariant &data, QString &outMsg)
 {
-    return EDParamsUtil::validateEDParams(data.value<opencved::EDParams>(), outMsg);
+    return EDParamUtil::validateEDParams(data.value<opencved::EDParams>(), outMsg);
 }
 
 QVariant EDParamDialog::getDefaultData()
 {
     opencved::EDParams p;
-    EDParamsUtil::getDefaultEDParams(p);
+    EDParamUtil::getDefaultEDParams(p);
     return QVariant::fromValue(p);
 }
 

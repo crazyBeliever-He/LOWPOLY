@@ -2,7 +2,7 @@
 #include "ui_saliency_detection_dialog.h"
 
 #include "algorithm_params.h"
-#include "params_util.h"
+#include "param_util.h"
 #include "dialogs_factory.h"
 
 SDParamDialog::SDParamDialog(QWidget *parent)
