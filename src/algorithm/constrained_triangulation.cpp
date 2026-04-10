@@ -4,6 +4,7 @@
 #include "constrained_triangulation.h"
 #include "logger.h"
 #include "CDT/include/CDT.h" // 引入 artem-ogre/CDT 核心头文件
+#include <QDebug>
 
 // 内部辅助结构，用于向 CDT 库传递约束边
 struct ConstrainedEdge {
@@ -218,16 +219,18 @@ void lab2rgb(float L, float a, float b, int& R, int& G, int& B) {
 
 QImage ConstrainedTriangulation::drawLowPolyResult(const QImage& originalImage)
 {
-    if (originalImage.isNull() || triangles.empty() || allVertices.empty()) {
+    if (originalImage.isNull() || triangles.empty() || allVertices.empty())
+    {
         return QImage();
     }
 
     int width = originalImage.width();
     int height = originalImage.height();
 
-    QImage srcImage = originalImage.convertToFormat(QImage::Format_RGB888);
-    QImage result(width, height, QImage::Format_RGB888);
-    result.fill(Qt::black);
+    QImage srcImage = originalImage.convertToFormat(QImage::Format_ARGB32);
+    QImage result(width, height, QImage::Format_ARGB32);
+    result.fill(Qt::transparent);
+
 
     QPainter painter(&result);
     //painter.setRenderHint(QPainter::Antialiasing);
@@ -237,7 +240,13 @@ QImage ConstrainedTriangulation::drawLowPolyResult(const QImage& originalImage)
     std::mt19937 rng(std::random_device{}());
     std::uniform_real_distribution<float> noiseDist(-9.9f, 9.9f);
 
-    for (const auto& tri : triangles) {
+    // 提前缓存自动生成的颜色，用于快速重绘
+    cachedColors.clear();
+    cachedColors.reserve(triangles.size());
+
+    for (int i = 0; i < triangles.size(); ++i)
+    {
+        const auto& tri = triangles[i];
         QPointF p1 = allVertices[tri.v[0]];
         QPointF p2 = allVertices[tri.v[1]];
         QPointF p3 = allVertices[tri.v[2]];
@@ -251,46 +260,64 @@ QImage ConstrainedTriangulation::drawLowPolyResult(const QImage& originalImage)
         int maxX = std::min(width - 1, static_cast<int>(std::ceil(boundingRect.right())));
         int maxY = std::min(height - 1, static_cast<int>(std::ceil(boundingRect.bottom())));
 
-        std::vector<LabColor> pixelColors;
-        // 预分配足够的空间提升性能
-        pixelColors.reserve((maxX - minX + 1) * (maxY - minY + 1));
+        // 创建一个内部结构体，同时缓存 Lab 颜色和 Alpha 透明度
+        struct PixelData { LabColor lab; int alpha; };
+        std::vector<PixelData> pixelDataList;
+        pixelDataList.reserve((maxX - minX + 1) * (maxY - minY + 1));
 
-        for (int y = minY; y <= maxY; ++y) {
-            const uchar* scanLine = srcImage.constScanLine(y);
-            for (int x = minX; x <= maxX; ++x) {
-                if (polygon.containsPoint(QPointF(x + 0.5, y + 0.5), Qt::OddEvenFill)) {
-                    int offset = x * 3;
-                    // 将提取的 RGB 立即转换至 Lab 空间
-                    pixelColors.push_back(rgb2lab(scanLine[offset], scanLine[offset + 1], scanLine[offset + 2]));
+        for (int y = minY; y <= maxY; ++y)
+        {
+            // 使用 QRgb (32位) 读取像素
+            const QRgb* scanLine = reinterpret_cast<const QRgb*>(srcImage.constScanLine(y));
+            for (int x = minX; x <= maxX; ++x)
+            {
+                if (polygon.containsPoint(QPointF(x + 0.5, y + 0.5), Qt::OddEvenFill))
+                {
+                    QRgb pixel = scanLine[x];
+                    // qRed, qGreen, qBlue, qAlpha 是 Qt 提供的宏，安全可靠
+                    int alpha = qAlpha(pixel);
+                    // 只有当像素具备实质可见度（比如 Alpha > 10 或 > 0）时，才允许它的颜色参与计算
+                    if (alpha > 0)
+                    {
+                        pixelDataList.push_back({
+                            rgb2lab(qRed(pixel), qGreen(pixel), qBlue(pixel)),
+                            alpha
+                        });
+                    }
                 }
             }
         }
 
+
         QColor fillColor;
 
-        if (!pixelColors.empty()) {
+        if (!pixelDataList.empty())
+        {
             // 1. 消除伪影：按照 Lab 的 L (亮度) 分量对三角形内所有像素进行排序
-            std::sort(pixelColors.begin(), pixelColors.end(), [](const LabColor& c1, const LabColor& c2) {
-                return c1.L < c2.L;
+            std::sort(pixelDataList.begin(), pixelDataList.end(), [](const PixelData& p1, const PixelData& p2) {
+                return p1.lab.L < p2.lab.L;
             });
 
             // 2. 取中间部分：提取 40% 到 60% 区间，避免极端的亮部或暗部拉偏整体颜色
-            std::size_t startIdx = static_cast<std::size_t>(pixelColors.size() * 0.40);
-            std::size_t endIdx = static_cast<std::size_t>(pixelColors.size() * 0.60);
-            if (endIdx <= startIdx) { endIdx = startIdx + 1; } // 防退化
+            std::size_t startIdx = static_cast<std::size_t>(pixelDataList.size() * 0.40);
+            std::size_t endIdx = static_cast<std::size_t>(pixelDataList.size() * 0.60);
+            if (endIdx <= startIdx) { endIdx = startIdx + 1; }  // 防退化
 
             float sumL = 0.0f, sumA = 0.0f, sumB = 0.0f;
+            int sumAlpha = 0; // 累加透明度
             float count = static_cast<float>(endIdx - startIdx);
 
             for (std::size_t i = startIdx; i < endIdx; ++i) {
-                sumL += pixelColors[i].L;
-                sumA += pixelColors[i].a;
-                sumB += pixelColors[i].b;
+                sumL += pixelDataList[i].lab.L;
+                sumA += pixelDataList[i].lab.a;
+                sumB += pixelDataList[i].lab.b;
+                sumAlpha += pixelDataList[i].alpha;
             }
 
             float avgL = sumL / count;
             float avgA = sumA / count;
             float avgB = sumB / count;
+            int avgAlpha = static_cast<int>(sumAlpha / count);
 
             // 3. 颜色扰动：给 L 通道加入噪声，使得扁平的多边形也带有些微明暗起伏的艺术感
             float currentNoise = noiseDist(rng);
@@ -304,8 +331,8 @@ QImage ConstrainedTriangulation::drawLowPolyResult(const QImage& originalImage)
                 // 可选进阶: 平滑衰减, 越靠近边界, 噪声越弱, 避免硬截断带来的视觉割裂
                 // 距离中心灰度(50)越远，衰减系数越小
                 float distanceToCenter = std::abs(avgL - 50.0f);
-                float attenuation = 1.0f - std::pow(distanceToCenter / 50.0f, 4.0f);
-                currentNoise *= attenuation;
+                float ratio = 1.0f - std::pow(distanceToCenter / 50.0f, 4.0f);
+                currentNoise *= ratio;
             }
 
             avgL += currentNoise;
@@ -314,17 +341,17 @@ QImage ConstrainedTriangulation::drawLowPolyResult(const QImage& originalImage)
             // 还原回 RGB 颜色
             int R, G, B;
             lab2rgb(avgL, avgA, avgB, R, G, B);
-            fillColor.setRgb(R, G, B);
+            fillColor.setRgb(R, G, B, avgAlpha);
 
             // 4. 后处理：提升饱和度使其更鲜艳 (论文中指出需提升饱和度以强化艺术感)
-            int h, s, v;
-            fillColor.getHsv(&h, &s, &v);
+            int h, s, v, a;
+            fillColor.getHsv(&h, &s, &v, &a);
             // 设定一个艺术化缩放系数，例如提高 30% 的饱和度
             // 只有当本身具有一定饱和度时才进行放大，避免将接近灰/白的杂色放大为明显的色块
             if (s > 10) {
                 s = std::min(255, static_cast<int>(s * 1.3));
             }
-            fillColor.setHsv(h, s, v);
+            fillColor.setHsv(h, s, v, a);
 
         } else {
             // 极其狭长的三角形的极限回退机制
@@ -332,10 +359,23 @@ QImage ConstrainedTriangulation::drawLowPolyResult(const QImage& originalImage)
             int cx = std::max(0, std::min(width - 1, static_cast<int>(centroid.x())));
             int cy = std::max(0, std::min(height - 1, static_cast<int>(centroid.y())));
 
-            const uchar* scanLine = srcImage.constScanLine(cy);
-            int offset = cx * 3;
-            fillColor = QColor(scanLine[offset], scanLine[offset + 1], scanLine[offset + 2]);
+            const QRgb* scanLine = reinterpret_cast<const QRgb*>(srcImage.constScanLine(cy));
+            QRgb pixel = scanLine[cx];
+            // 为了防止重心点也是杂色，加入同样的透明度约束
+            int alpha = qAlpha(pixel);
+            if (alpha <= 10) {
+                fillColor = Qt::transparent;
+            } else {
+                fillColor = QColor(qRed(pixel), qGreen(pixel), qBlue(pixel), alpha);
+            }
         }
+
+        // 检查是否有用户自定义颜色
+        if (customColors.find(i) != customColors.end()) {
+            fillColor = customColors[i];
+        }
+        // 保存到缓存
+        cachedColors.push_back(fillColor);
 
         // 依然保留缝隙消除技术 (利用 QPen 和 QBrush 重合画边)，保证在 Qt 渲染器下网格致密无黑边
         QPen pen(fillColor, 0.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
@@ -345,7 +385,70 @@ QImage ConstrainedTriangulation::drawLowPolyResult(const QImage& originalImage)
         painter.drawPolygon(polygon);
     }
 
+    // 蒙版裁剪 (Alpha Masking)
+    // 作用：将画好的低多边形网格与原图的 Alpha 通道进行叠加，
+    // 像曲奇模具一样切掉所有溢出到透明背景区域的多边形，完美还原原图轮廓！
+    painter.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+    painter.drawImage(0, 0, srcImage);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver); // 恢复默认模式
+
+
     painter.end();
     return result;
 }
 
+// 坐标查找三角形
+int ConstrainedTriangulation::findTriangleAt(QPointF pt) const
+{
+    for (int i = 0; i < triangles.size(); ++i)
+    {
+        QPolygonF poly = getTrianglePolygon(i);
+        if (poly.containsPoint(pt, Qt::OddEvenFill)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// 获取三角形顶点
+QPolygonF ConstrainedTriangulation::getTrianglePolygon(int triIndex) const
+{
+    QPolygonF poly;
+    if (triIndex >= 0 && triIndex < triangles.size()) {
+        const auto& tri = triangles[triIndex];
+        poly << allVertices[tri.v[0]] << allVertices[tri.v[1]] << allVertices[tri.v[2]];
+    }
+    return poly;
+}
+
+// 4. 极速重绘 (只重新绘制多边形，不计算颜色)
+QImage ConstrainedTriangulation::redrawLowPolyFast(const QImage& originalImage)
+{
+    int width = originalImage.width();
+    int height = originalImage.height();
+    QImage result(width, height, QImage::Format_ARGB32);
+    result.fill(Qt::transparent);
+    QPainter painter(&result);
+
+    for (int i = 0; i < triangles.size(); ++i)
+    {
+        QPolygonF poly = getTrianglePolygon(i);
+
+        // 优先使用自定义颜色，否则使用缓存的颜色
+        QColor fillColor = cachedColors[i];
+        if (customColors.find(i) != customColors.end()) {
+            fillColor = customColors[i];
+        }
+
+        QPen pen(fillColor, 0.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        painter.setPen(pen);
+        painter.setBrush(QBrush(fillColor));
+        painter.drawPolygon(poly);
+    }
+
+    QImage srcImage = originalImage.convertToFormat(QImage::Format_ARGB32);
+    painter.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+    painter.drawImage(0, 0, srcImage);
+    painter.end();
+    return result;
+}

@@ -2,6 +2,8 @@
 
 #include <QFileDialog>
 #include <QPainter>
+#include <QThread>
+#include <QImageReader>
 #include "logger.h"
 #include "param_util.h"
 // 包含所有前向声明过的完整定义
@@ -14,6 +16,8 @@
 #include "feature_flow.h"
 #include "vertex_optimization.h"
 #include "constrained_triangulation.h"
+
+#include "image_worker.h"
 
 ImageController::ImageController(ImageModel *model,
                                  ImageWidget *view,
@@ -43,6 +47,28 @@ ImageController::ImageController(ImageModel *model,
     // 6. constrained triangulation 初始化
     constrainedTriangulation = std::make_unique<ConstrainedTriangulation>();
 
+    // 7. 初始化多线程架构
+    workerThread = new QThread(this);
+    // 注意：Worker 不能传入 parent，否则 moveToThread 会报错！
+    worker = new ImageWorker(this, nullptr);
+    worker->moveToThread(workerThread);
+    // 内部通路：Controller 触发 Worker
+    connect(this, &ImageController::requestWorkerStart, worker, &ImageWorker::processAllTime);
+
+    // 外部通路：Worker 进度传递回 Controller，再转发给 UI (或直接转发)
+    connect(worker, &ImageWorker::progressUpdated, this, &ImageController::progressUpdated);
+
+    // 收尾工作：任务完成后重置状态锁
+    connect(worker, &ImageWorker::finished, this, [this](){
+        this->isProcessing = false;
+        emit processFinished();
+    });
+
+    // 启动子线程的事件循环
+    workerThread->start();
+
+
+
     // n. 实现connect
     // 切换源图
     connect(imageModel, &ImageModel::originImageChanged,
@@ -50,15 +76,27 @@ ImageController::ImageController(ImageModel *model,
     // ImageModel 和 ImageWidget 解耦
     connect(imageModel, &ImageModel::displayImageUpdated,
             imageWidget, &ImageWidget::updateImageKeepView);
+    // 绑定用户交互信号
+    connect(imageWidget, &ImageWidget::requestAddPoint,
+            this, &ImageController::onAddPointRequested);
+    connect(imageWidget, &ImageWidget::requestDeletePointsInArea,
+            this, &ImageController::onDeletePointsRequested);
+    connect(imageWidget, &ImageWidget::requestSelectTriangle,
+            this, &ImageController::onTriangleSelected);
 }
 
-ImageController::~ImageController() = default;
+ImageController::~ImageController()
+{
+    // 安全退出线程的标准写法
+    if (workerThread->isRunning()) {
+        workerThread->quit();
+        workerThread->wait();
+    }
+    delete worker;
+}
 
 void ImageController::onOriginImageChanged(const QImage& img)
 {
-    // TODO: 根据传入的图片修改算法的参数, 某些算法的参数也要重置
-
-
     // 重置widget ui
     emit requestUiReset();
     //currentStage = ProcessStage::None;
@@ -77,6 +115,20 @@ void ImageController::onImageTypeSelected(int intType)
         //qDebug() << intType;
         imageType = static_cast<ImageModel::ImageType>(intType);
         imageModel->setCurrentImageType(imageType);
+
+        // ==========================================
+        // 视图切换时的交互状态清理
+        if (imageType != ImageModel::ImageType::Test)
+        {
+            // 1. 清除 ImageWidget 画布上的高亮三角形
+            // 因为 Controller 拥有 imageWidget 的指针，所以由它来直接调用最合适
+            if (imageWidget)
+            {
+                imageWidget->setHighlightedTriangle(QPolygonF());
+            }
+            // 2. 发出信号，通知 Widget 隐藏颜色面板
+            emit closeColorDialogRequested();
+        }
     }
 }
 
@@ -87,35 +139,49 @@ void ImageController::onImageTypeSelected(int intType)
 // apply alogrithms
 void ImageController::applyAllImageProcess()
 {
-    // TODO: 开启一或两个工作线程(Worker Thread)执行该函数
-    // TODO: 根据阶段的不同(修改某一步的参数导致的), 使用switch判断从哪一步开始
-    // TODO: 增加交互功能
 
-    // 阶段 1: Edge Drawing. 如果当前 ED 没做,则执行它
-    //if (currentStage < ProcessStage::EdgeDrawingDone)
-    {
-    applyEdgeDrawing();
-        //currentStage = ProcessStage::EdgeDrawingDone;
+    // // 阶段 1: Edge Drawing. 如果当前 ED 没做,则执行它
+    // //if (currentStage < ProcessStage::EdgeDrawingDone)
+    // {
+    // applyEdgeDrawing();
+    //     //currentStage = ProcessStage::EdgeDrawingDone;
+    // }
+
+    // // 阶段 2: Douglas Peucker. 如果当前没做 DP,或者 ED 重做导致 DP 失效
+    // //if (currentStage < ProcessStage::DouglasPeuckerDone)
+    // {
+    // applyDouglasPeucker();
+    //     //currentStage = ProcessStage::DouglasPeuckerDone;
+    // }
+
+    // // 阶段 3: 只有在边缘和约束点都计算完毕后，才能执行显著性检测与采样
+    // applySaliencyDetection();
+
+    // // 阶段 4: 特征流场
+    // applyJumpFloodingAndFeatureFlow();
+
+    // // 阶段 5: 顶点优化
+    // applyVertexOptimization();
+
+    // // 阶段 6: 三角剖分和颜色处理
+    // applyConstrainedTriangulation();
+
+
+
+
+    // 防抖与防并发锁：如果正在处理，则拒绝新的处理请求
+    if (isProcessing) {
+        LOG_INFO << "Worker is busy, ignoring new request.";
+        return;
     }
 
-    // 阶段 2: Douglas Peucker. 如果当前没做 DP,或者 ED 重做导致 DP 失效
-    //if (currentStage < ProcessStage::DouglasPeuckerDone)
-    {
-    applyDouglasPeucker();
-        //currentStage = ProcessStage::DouglasPeuckerDone;
-    }
+    isProcessing = true;
 
-    // 阶段 3: 只有在边缘和约束点都计算完毕后，才能执行显著性检测与采样
-    applySaliencyDetection();
-
-    // 阶段 4: 特征流场
-    applyJumpFloodingAndFeatureFlow();
-
-    // 阶段 5: 顶点优化
-    applyVertexOptimization();
-
-    // 阶段 6: 三角剖分和颜色处理
-    applyConstrainedTriangulation();
+    // 异步触发后台线程工作
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
+    QSize size = originImage.size();
+    qDebug() << "CUDA\nOrigin image size:" << size;
+    emit requestWorkerStart();
 
 }
 
@@ -132,8 +198,8 @@ void ImageController::applyEdgeDrawing()
 
     imageModel->setImage(ImageModel::ImageType::EdgeDrawing, edgeMap);
 
-    QPair<int, int> edInfo = edgeDrawing->getEDPointsNumber();
-    qDebug()<<"Edge Drawing Info: segmentCount is " <<edInfo.first<<", totalPoints is " <<edInfo.second;
+    //QPair<int, int> edInfo = edgeDrawing->getEDPointsNumber();
+    //qDebug()<<"Edge Drawing Info: segmentCount is " <<edInfo.first<<", totalPoints is " <<edInfo.second;
 }
 
 void ImageController::applyDouglasPeucker()
@@ -153,8 +219,8 @@ void ImageController::applyDouglasPeucker()
     imageModel->setImage(ImageModel::ImageType::DouglasPoint, pointMap);
     imageModel->setImage(ImageModel::ImageType::DouglasLine, lineMap);
 
-    int dpInfo = douglasPeucker->getDPPointsNumber();
-    qDebug()<<"Douglas Peucker Info: totalPoints is " <<dpInfo;
+    //int dpInfo = douglasPeucker->getDPPointsNumber();
+    //qDebug()<<"Douglas Peucker Info: totalPoints is " <<dpInfo;
 }
 
 void ImageController::applySaliencyDetection()
@@ -173,7 +239,7 @@ void ImageController::applySaliencyDetection()
     // TODO: douglas peucker 算法生成的约束点较多, 一般大于默认的约束点总数, 要优化
     int sdInfo =saliencyDetection->generateNonUniformSamples(w, h, douglasPeucker->getDPPointsNumber(), douglasPeucker->dpParams.eta);
 
-    qDebug()<<"saliency detection Info: samples is " <<sdInfo;
+    //qDebug()<<"saliency detection Info: samples is " <<sdInfo;
 }
 
 void ImageController::applyJumpFloodingAndFeatureFlow()
@@ -182,22 +248,32 @@ void ImageController::applyJumpFloodingAndFeatureFlow()
     int w = originImage.width();
     int h = originImage.height();
     bool successJFA =  featureFlow->jumpFloodingCUDAApi(edgeDrawing->edResults,w,h);
+    //bool successJFA =false;
     if(!successJFA)
     {
-        // TODO: 调用非cuda版本
-        LOG_ERROR << " jfa and ff fail";
+        LOG_INFO <<"use CPU jfa";
+        successJFA =  featureFlow->jumpFloodingCPUApi(edgeDrawing->edResults,w,h);
+        if(!successJFA)
+        {
+            LOG_ERROR << "both CUDA and CPU jfa fail";
+        }
     }
-    QImage resultJFA = featureFlow->drawJumpFloodingMap(w,h,featureFlow->jFCUDAResults,edgeDrawing->edResults);
+    QImage resultJFA = featureFlow->drawJumpFloodingMap(w,h,featureFlow->jFResults,edgeDrawing->edResults);
     imageModel->setImage(ImageModel::ImageType::JumpFlooding, resultJFA);
 
     float Li = douglasPeucker->dpParams.eta*(w+h);
-    bool successFF = featureFlow->featureFlowCUDAApi(featureFlow->jFCUDAResults,w,h,Li);
+    bool successFF = featureFlow->featureFlowCUDAApi(featureFlow->jFResults,w,h,Li);
+    //bool successFF =false;
     if(!successFF)
     {
-        // TODO: 调用非cuda版本
-        LOG_ERROR << " jfa and ff fail";
+        LOG_INFO <<"use CPU ff";
+        successFF =  featureFlow->featureFlowCPUApi(featureFlow->jFResults,w,h,Li);
+        if(!successFF)
+        {
+            LOG_ERROR << "both CUDA and CPU ff  fail";
+        }
     }
-    QImage resultFF = featureFlow->drawFeatureFlowMap(w,h,featureFlow->fFCUDAResults);
+    QImage resultFF = featureFlow->drawFeatureFlowMap(w,h,featureFlow->fFResults);
     imageModel->setImage(ImageModel::ImageType::FeatureFlow, resultFF);
 }
 
@@ -211,7 +287,7 @@ void ImageController::applyVertexOptimization()
                                                              saliencyDetection->sampledPoints,
                                                              douglasPeucker->dpResults,
                                                              douglasPeucker->cornerPoints,
-                                                             featureFlow->fFCUDAResults);
+                                                             featureFlow->fFResults);
     if(!success)
     {
         LOG_ERROR << " vertex optimization fail";
@@ -240,8 +316,8 @@ void ImageController::applyConstrainedTriangulation()
     imageModel->setImage(ImageModel::ImageType::TriangulationWireframe, result);
     QImage result2 = constrainedTriangulation->drawLowPolyResult(originImage);
     imageModel->setImage(ImageModel::ImageType::LowPoly, result2);
+    imageModel->setImage(ImageModel::ImageType::Test, result2);
 }
-
 
 /********************************************************************************/
 // get/set params from dialogs
@@ -352,13 +428,14 @@ void ImageController::onOpenImage(QWidget *parent)
 {
     QString path = QFileDialog::getOpenFileName(parent,
                                                 tr("Open"),
-                                                "C:/Users/h7286/Desktop/image",
+                                                "C:/Users/h7286/Desktop/testimage",
                                                 "Images (*.jpg *.jpeg *.png *.bmp *.tif *.tiff)");
     if (path.isEmpty())
     {
         emit statusMessage(tr("Open canceled"));
         return;
     }
+    QImageReader::setAllocationLimit(8192);
     if (imageModel->loadImage(path))
     {
         emit statusMessage(tr("Image loaded"));
@@ -392,4 +469,126 @@ void ImageController::onSaveImage(QWidget *parent)
         return;
     }
     emit errorOccurred(tr("Failed to save image to: ") + path);
+}
+
+/********************************************************************************/
+// user interaction
+/********************************************************************************/
+
+void ImageController::onAddPointRequested(QPointF imgPos)
+{
+    auto currentType = imageModel->getCurrentImageType();
+    if (currentType != ImageModel::ImageType::VertexOptimization &&
+        currentType != ImageModel::ImageType::TriangulationWireframe)
+    {
+        return; // 不在指定状态，拒绝交互
+    }
+
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
+    // 越界保护
+    if (imgPos.x() < 0 || imgPos.y() < 0 || imgPos.x() >= originImage.width() || imgPos.y() >= originImage.height()) {
+        return;
+    }
+
+    // 直接作为优化好的自由点加入
+    vertexOptimization->optimizedPoints.push_back(imgPos);
+
+    // 局部重绘并刷新下游阶段
+    updateAfterInteraction();
+}
+
+void ImageController::onDeletePointsRequested(QRectF imgArea)
+{
+    auto currentType = imageModel->getCurrentImageType();
+    if (currentType != ImageModel::ImageType::VertexOptimization &&
+        currentType != ImageModel::ImageType::TriangulationWireframe)
+    {
+        return; // 不在指定状态，拒绝交互
+    }
+
+    // 1. 从自由点集合中删除
+    auto& optPoints = vertexOptimization->optimizedPoints;
+    optPoints.erase(std::remove_if(optPoints.begin(), optPoints.end(),
+                                   [&imgArea](const QPointF& pt) { return imgArea.contains(pt); }), optPoints.end());
+
+    // 2. 从约束点 (Douglas-Peucker 结果) 中删除
+    auto& dpLines = douglasPeucker->dpResults;
+    for (auto& line : dpLines) {
+        line.erase(std::remove_if(line.begin(), line.end(),
+                                  [&imgArea](const QPoint& pt) { return imgArea.contains(QPointF(pt)); }), line.end());
+    }
+
+    // 如果想连四个角点也能删除，可以对 douglasPeucker->cornerPoints 执行同样操作。
+    // 但通常保留角点有利于三角剖分覆盖全图，建议不删。
+
+    // 局部重绘并刷新下游阶段
+    updateAfterInteraction();
+}
+
+void ImageController::updateAfterInteraction()
+{
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
+    int w = originImage.width();
+    int h = originImage.height();
+
+    // 1. 刷新 VertexOptimization 的渲染图
+    QImage voResult = vertexOptimization->drawOptimizedVertices(w, h,
+                                                                douglasPeucker->dpResults,
+                                                                douglasPeucker->cornerPoints);
+    imageModel->setImage(ImageModel::ImageType::VertexOptimization, voResult);
+
+    // 2. 重新跑 Constrained Triangulation
+    applyConstrainedTriangulation();
+
+    // 3. UI 焦点保持: 由于重新 setImage 会触发 displayImageUpdated,
+    // ImageWidget 会自动刷新当前视图，无需特殊干预。
+}
+
+void ImageController::clearTriangleSelection()
+{
+    if (imageWidget) {
+        imageWidget->setHighlightedTriangle(QPolygonF());
+    }
+}
+
+void ImageController::onTriangleSelected(QPointF imgPos)
+{
+    auto currentType = imageModel->getCurrentImageType();
+    if (currentType != ImageModel::ImageType::Test) {
+        // 如果不是 Test 模式，清理高亮框并退出
+        imageWidget->setHighlightedTriangle(QPolygonF());
+        return;
+    }
+
+    int triIndex = constrainedTriangulation->findTriangleAt(imgPos);
+    if (triIndex != -1) {
+        // 1. 让 Widget 画高亮框
+        QPolygonF poly = constrainedTriangulation->getTrianglePolygon(triIndex);
+        imageWidget->setHighlightedTriangle(poly);
+
+        // 2. 获取当前颜色 (优先取自定义，其次取缓存)
+        QColor currentColor = constrainedTriangulation->cachedColors[triIndex];
+        if (constrainedTriangulation->customColors.count(triIndex)) {
+            currentColor = constrainedTriangulation->customColors[triIndex];
+        }
+
+        // 3. 通知主窗口弹出或更新颜色调节面板
+        emit openColorDialogRequested(triIndex, currentColor);
+    } else {
+        imageWidget->setHighlightedTriangle(QPolygonF());
+    }
+}
+
+void ImageController::updateTriangleColor(int triIndex, QColor newColor)
+{
+    // 保存自定义颜色
+    constrainedTriangulation->customColors[triIndex] = newColor;
+
+    // 极速重绘
+    QImage originImage = imageModel->getImage(ImageModel::ImageType::Origin);
+    QImage newResult = constrainedTriangulation->redrawLowPolyFast(originImage);
+
+    // 更新 Test 和 LowPoly 图层
+    imageModel->setImage(ImageModel::ImageType::Test, newResult);
+    imageModel->setImage(ImageModel::ImageType::LowPoly, newResult);
 }

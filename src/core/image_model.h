@@ -37,6 +37,7 @@ private:
 public:
     explicit ImageModel(QObject *parent = nullptr);
 
+    ImageType getCurrentImageType() const { return currentType; }
     // 辅助函数: type转换 int 函数
     int typeToIdx(ImageType type) const;
     const QImage &getImage(ImageType type) const;

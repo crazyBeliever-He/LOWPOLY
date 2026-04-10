@@ -50,6 +50,18 @@ public:
      * @return 渲染完毕的低多边形图像
      */
     QImage drawLowPolyResult(const QImage& originalImage);
+
+
+//
+public:
+    // 缓存每个三角形算好的颜色，用于极速重绘
+    std::vector<QColor> cachedColors;
+    // 用户自定义的颜色覆盖字典 (Key: 三角形索引, Value: 颜色)
+    std::unordered_map<int, QColor> customColors;
+    // 交互支持接口
+    int findTriangleAt(QPointF pt) const; // 根据坐标找三角形索引，找不到返回 -1
+    QPolygonF getTrianglePolygon(int triIndex) const; // 获取三角形的多边形对象
+    QImage redrawLowPolyFast(const QImage& originalImage); // 使用 cachedColors 和 customColors 极速重绘
 };
 
 #endif // CONSTRAINED_TRIANGULATION_H

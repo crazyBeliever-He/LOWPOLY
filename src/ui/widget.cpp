@@ -11,6 +11,7 @@
 #include "image_controller.h"   // 业务逻辑
 #include "algorithm_params.h"       // 业务需要的结构体
 #include "dialogs_factory.h"
+#include "triangle_color_dialog.h"
 
 // 实现依赖（Implementation Dependency）放在 .cpp
 
@@ -34,6 +35,10 @@ Widget::Widget(QWidget *parent)
     initMenuWidget();
     initContentWidget();
     initStatusWidget();
+
+    // 实例化非模态颜色调节面板
+    triangleColorDialog = new TriangleColorDialog(this);
+    initInteractiveConnections();
 }
 
 void Widget::initMenuWidget()
@@ -159,6 +164,26 @@ void Widget::initStatusWidget()
                     // if (success) dialog->hide();
                 }
             });
+
+
+    // 接收进度并更新 UI
+    connect(imageController, &ImageController::progressUpdated,
+            this, [this](int percent, const QString &stepName) {
+
+                // 如果有进度条组件：
+                // ui->progressBar->setValue(percent);
+
+                // 直接将进度格式化到现有的 statusLabel 里：
+                QString statusText = QString("%1 (%2%)").arg(stepName).arg(percent);
+                ui->statusLabel->setText(statusText);
+            });
+
+    // 接收处理完成信号，恢复界面
+    connect(imageController, &ImageController::processFinished,
+            this, [this]() {
+                ui->statusLabel->setText(tr("Ready"));
+                // 如果在处理前禁用了某些按钮，可以在这里重新启用
+            });
 }
 
 void Widget::onShowErrorMessage(const QString &msg)
@@ -196,6 +221,55 @@ void Widget::onShowAboutAuthor()
         </div>
     )";
     QMessageBox::about(this, tr("About Author"), content);
+}
+
+// 专门用于处理交互式面板的信号连接
+void Widget::initInteractiveConnections()
+{
+
+    connect(triangleColorDialog, &TriangleColorDialog::dialogClosed,
+            imageController, &ImageController::clearTriangleSelection);
+
+    // 通路 1: Controller 通知 Widget 弹窗并更新数据
+    // 当用户在画布上按住 Ctrl+左键 选中三角形时触发
+    connect(imageController, &ImageController::openColorDialogRequested,
+            this, [this](int triIndex, QColor color) {
+                // 更新面板里的目标索引和颜色
+                triangleColorDialog->setTarget(triIndex, color);
+
+                // 如果是因为切换视图回来的，就把位置重置到主窗口中心
+                if (this->needResetColorDialogPos)
+                {
+                    // 计算居中位置 (相对于 Widget 所在的整个主窗口)
+                    QPoint centerPos = this->window()->geometry().center() - triangleColorDialog->rect().center();
+                    triangleColorDialog->move(centerPos);
+                    this->needResetColorDialogPos = false; // 消费掉标志位
+                }
+
+                // 显示面板
+                triangleColorDialog->show();
+                // 确保面板在最上层
+                triangleColorDialog->raise();
+            });
+
+    // 通路 2: 面板通知 Controller 提交颜色修改
+    // 当用户在面板上点击 Confirm 按钮时触发
+    connect(triangleColorDialog, &TriangleColorDialog::colorConfirmed,
+            imageController, &ImageController::updateTriangleColor);
+
+    // (可选) 通路 3: 如果你在面板里实现了实时预览的信号 colorPreview，可以在这里接上
+    // connect(triangleColorDialog, &TriangleColorDialog::colorPreview,
+    //         imageController, &ImageController::updateTriangleColor);
+
+    // 监听 Controller 发来的关闭请求
+    connect(imageController, &ImageController::closeColorDialogRequested, this, [this]() {
+        // 安全检查：指针有效且面板当前是显示状态，才执行隐藏
+        if (this->triangleColorDialog && this->triangleColorDialog->isVisible()) {
+            this->triangleColorDialog->hide(); // 只是隐藏（hide），不销毁（delete），下次切回 Test 还能继续复用
+        }
+        // 只要切了视图，就标记下次弹窗需要重置位置
+        this->needResetColorDialogPos = true;
+    });
 }
 
 Widget::~Widget()

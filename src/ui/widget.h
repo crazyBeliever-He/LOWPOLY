@@ -13,6 +13,7 @@ class mainWidget;   // ui_widget.h文件里面定义的类，前向声明
 QT_END_NAMESPACE
 class ImageController;
 class EDParamDialog;
+class TriangleColorDialog;
 
 class Widget : public QWidget
 {
@@ -24,6 +25,9 @@ private:
     EDParamDialog *edParamDialog;
     // 存储已经创建过的 Dialog，实现单例复用
     QMap<QString, BaseDialog*> dialogMap;
+    // 用于测试模式下交互修改三角形颜色的独立非模态面板
+    TriangleColorDialog *triangleColorDialog;
+    bool needResetColorDialogPos = true;
 
 public:
     Widget(QWidget *parent = nullptr);
@@ -44,6 +48,8 @@ private:
 
     void onShowAboutProgram();
     void onShowAboutAuthor();
+
+    void initInteractiveConnections();
 };
 
 #endif // WIDGET_H

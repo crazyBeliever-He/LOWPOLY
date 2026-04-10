@@ -18,6 +18,7 @@ SaliencyDetection::SaliencyDetection()
 QImage SaliencyDetection::saliencyDetectionInterface(const QImage &input)
 {
     if (input.isNull()) return QImage();
+    saliencyMap = QImage();
 
     // 对应 UI 中 QComboBox 的索引:
     // 0 -> "type1", 1 -> "type2", 2 -> "type3"
@@ -25,7 +26,7 @@ QImage SaliencyDetection::saliencyDetectionInterface(const QImage &input)
     {
     case 0:// 选项 1: 跨进程通信(IPC), 完整的文作者提供版
         saliencyMap = saliencyDetectionExe(input);
-        if(!saliencyMap.isNull())
+        if(saliencyMap.isNull())
         {
             LOG_WARNING << "saliency detection exe falied, use dll version";
             break;

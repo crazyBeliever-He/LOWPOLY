@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <memory>
+#include <QColor>
 #include "algorithm_params.h"
 
 /**
@@ -27,6 +28,8 @@ class FeatureFlow;
 class VertexOptimization;
 class ConstrainedTriangulation;
 
+class ImageWorker;
+
 class ImageController : public QObject
 {
     Q_OBJECT
@@ -34,11 +37,14 @@ class ImageController : public QObject
 public:
     // enum class ProcessStage {
     //     None,
-    //     EdgeDrawingDone,
-    //     DouglasPeuckerDone
+    //     AutoProcessing, // 正在执行 ED -> DP -> SD -> FF -> VO
+    //     ReadyForEdit    // 阶段5完成，可以开始手动精修点，并随时重跑阶段6
     // };
-    //Q_ENUM(ProcessStage)
-    //ProcessStage currentStage = ProcessStage::None;
+    // Q_ENUM(ProcessStage)
+    // ProcessStage currentStage = ProcessStage::None;
+
+    // 防止重入并发引发崩溃
+    bool isProcessing = false;
 
     ImageModel *imageModel;
     ImageWidget *imageWidget;
@@ -76,6 +82,16 @@ public:
     // 执行所有图像处理方法
     void applyAllImageProcess();
 
+    // 交互增加删除点
+    void onAddPointRequested(QPointF imgPos);
+    void onDeletePointsRequested(QRectF imgArea);
+    void updateAfterInteraction();
+
+    // 交互修改指定三角颜色
+    void onTriangleSelected(QPointF imgPos);
+    void updateTriangleColor(int triIndex, QColor newColor);
+    void clearTriangleSelection();
+
     // 响应 ImageModel 发出的通知, 执行切换源图后需要的所有操作
     void onOriginImageChanged(const QImage& img);
     // 响应 Widget 发出的通知, 用户申请查看某种结果图
@@ -92,6 +108,20 @@ signals:
     // 向外界反馈特定类型的参数应用结果
     void paramsApplyFinished(const QString& typeName, bool success, const QString& message);
     //void displayTypeRequested(ImageModel::ImageType type);
+
+    // 通知 Widget 弹窗并带上当前颜色和索引
+    void openColorDialogRequested(int triIndex, QColor currentColor);
+    void closeColorDialogRequested();
+
+    // processing时对外抛给UI的进度信号
+    void progressUpdated(int percent, const QString &stepName);
+    void processFinished();
+    // 内部通知 Worker 开始干活的信号
+    void requestWorkerStart();
+
+private:
+    QThread *workerThread;
+    ImageWorker *worker;
 };
 
 #endif // IMAGE_CONTROLLER_H

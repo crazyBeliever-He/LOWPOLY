@@ -77,6 +77,11 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/algorithm/constrained_triangulation.h
         src/algorithm/constrained_triangulation.cpp
         src/utils/hello.cu
+        src/ui/triangle_color_dialog.h
+        src/ui/triangle_color_dialog.cpp
+        src/ui/triangle_color_dialog.ui
+        src/core/image_worker.h
+        src/core/image_worker.cpp
 
 
     )

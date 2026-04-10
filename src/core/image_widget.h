@@ -13,7 +13,6 @@ class ImageWidget : public QWidget
 
 public:
     bool autoSize;  // 是否自适应窗口大小
-    bool editFunc;
 private:
     QImage presentImage;        // 当前图像的源数据
     QPixmap cachedPixmap;       // 经过缩放偏的移缓存数据
@@ -41,9 +40,26 @@ private:
     // 将控件坐标映射到原图坐标
     QPointF widgetToImage(const QPointF &p) const;
 
+// 交互增删点
 signals:
     void requestAddPoint(QPointF imgPos);
     void requestDeletePointsInArea(QRectF imgArea);
+private:
+    bool isSelecting = false;      // 是否正在框选
+    QPointF selectionStart;        // 框选起点（Widget坐标）
+    QPointF selectionEnd;          // 框选终点（Widget坐标）
+protected:
+    void mouseReleaseEvent(QMouseEvent *event) override; // 增加鼠标释放事件
+
+
+// 交互对指定三角重新上色
+private:
+    QPolygonF highlightedTriangle; // 记录当前高亮的三角形
+public:
+    void setHighlightedTriangle(const QPolygonF& poly) { highlightedTriangle = poly; update(); }
+signals:
+    // 请求选中三角形
+    void requestSelectTriangle(QPointF imgPos);
 };
 
 #endif // IMAGE_WIDGET_H

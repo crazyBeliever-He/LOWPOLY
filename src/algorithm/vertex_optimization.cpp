@@ -1,4 +1,5 @@
 #include <QPainter>
+#include <Qdebug>
 
 #include "vertex_optimization.h"
 #include "VertexOptimization.h"
@@ -15,6 +16,7 @@ bool VertexOptimization::vertexOptimizationApi(int width, int height, int Nc,
     // 1. 基础参数校验
     if (width <= 0 || height <= 0 || sampledPoints.empty())
     {
+        //qDebug()<<width<< height<< sampledPoints.empty();
         LOG_ERROR << "Vertex Optimization 启动失败: 图像尺寸无效或没有自由采样点";
         return false;
     }
@@ -99,19 +101,21 @@ QImage VertexOptimization::drawOptimizedVertices(int width, int height,
 
     // 2. 绘制受约束的特征边缘 (Douglas-Peucker 结果)
     // 使用青色 (Cyan)，线宽 1.0，表现骨架感
-    QPen edgePen(QColor(0, 255, 255), 1.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    QPen edgePen(QColor(0,255,255), 1.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     painter.setPen(edgePen);
     for (const auto& line : dpResults)
     {
         if (!line.empty())
         {
-            painter.drawPolyline(line.data(), static_cast<int>(line.size()));
+            //painter.drawPolyline(line.data(), static_cast<int>(line.size()));
+            // 只绘制受约束的特征边缘上的点 (将原来的线改为点)
+            painter.drawPoints(line.data(), static_cast<int>(line.size()));
         }
     }
 
     // 3. 绘制受约束的角点
     // 使用白色，稍微加粗
-    QPen cornerPen(Qt::white, 3.0, Qt::SolidLine, Qt::RoundCap);
+    QPen cornerPen(Qt::white, 1.0, Qt::SolidLine, Qt::RoundCap);
     painter.setPen(cornerPen);
     if (!cornerPoints.empty())
     {
@@ -120,7 +124,7 @@ QImage VertexOptimization::drawOptimizedVertices(int width, int height,
 
     // 4. 绘制优化后的自由点 (亚像素精度 QPointF)
     // 使用亮橙红 (Tomato/Coral)，大小适中，与冷色的约束边形成强烈对比
-    QPen freePointPen(QColor(255, 99, 71), 2.5, Qt::SolidLine, Qt::RoundCap);
+    QPen freePointPen(Qt::red, 1.0, Qt::SolidLine, Qt::RoundCap);
     painter.setPen(freePointPen);
     if (!optimizedPoints.empty())
     {

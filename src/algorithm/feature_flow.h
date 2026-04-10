@@ -27,15 +27,19 @@
 class FeatureFlow
 {
 public:
-    std::vector<JFAFF::JFAPoint> jFCUDAResults;
-    std::vector<float> fFCUDAResults;
+    std::vector<JFAFF::JFAPoint> jFResults;
+    std::vector<float> fFResults;
     // CUDA版本JFA, 考虑将seeds参数更换为douglas peucker的结果(点图但是连线版本)
     bool jumpFloodingCUDAApi(const ScopedEDResults& edResults,
                              int imgWidth,
                              int imgHeight);
-    bool jumpFloodingCPU(const ScopedEDResults& edResults,
+    bool jumpFloodingCPUApi(const ScopedEDResults& edResults,
                          int imgWidth,
                          int imgHeight);
+    bool featureFlowCPUApi(const std::vector<JFAFF::JFAPoint>& nearestSeedMap,
+                            int imgWidth,
+                            int imgHeight,
+                            float m);
 
     // nearestSeedMap 即 jFCUDAResult. m 为控制流场通道宽度的参数, 按论文建议传入 Li / 2.0f
     bool featureFlowCUDAApi(const std::vector<JFAFF::JFAPoint>& nearestSeedMap,
